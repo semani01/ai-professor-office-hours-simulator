@@ -21,19 +21,33 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
-### [Date] — Phase 0: Project Setup
+### 2026-02-25 — Phase 0: Project Setup
 
 **Built:**
-- 
+- Fresh git repo scoped to `Maieutic/` folder (removed erroneous Documents-level `.git`)
+- GitHub repo created: `semani01/ai-professor-office-hours-simulator` (public), `main` as default branch
+- Express server: `server/src/index.js` with `/health` endpoint, CORS, JSON middleware, port 3001
+- Supabase client: `server/src/db/supabase.js` using `@supabase/supabase-js`
+- React + Vite client scaffolded; Tailwind CSS v4 installed via `@tailwindcss/vite` plugin
+- Vite proxy configured: `/api` → `http://localhost:3001`
+- `App.jsx` cleaned to minimal scaffold, Vite default boilerplate removed
 
 **Decisions:**
-- 
+- CommonJS (`require`) used throughout server — avoids ESM compatibility issues with `pdf-parse` and `mammoth`
+- Tailwind CSS v4 (not v3): uses `@import "tailwindcss"` in CSS and the Vite plugin instead of `tailwind.config.js`
+- `nodemon` added as dev dependency for auto-reload during development
+- Project renamed from "Maieutic" / "Socratic Tutor" to "AI Professor Office Hours Simulator" across all docs
+- Model updated to `claude-haiku-4-5-20251001` in all references
 
 **Problems:**
-- 
+- Documents-level `.git` existed from a prior project; had to remove it and re-init inside `Maieutic/` only
+- Initial commit included co-author tag — reset with `git update-ref -d HEAD` and recommitted cleanly
 
 **Next:**
-- 
+- Supabase project creation (manual — requires dashboard): enable pgvector, run schema SQL from ARCHITECTURE.md
+- Create `server/.env` with API keys
+- Verify Supabase connection from server
+- Cut `feat/phase-1-ingestion` branch and begin ingestion pipeline
 
 ---
 
