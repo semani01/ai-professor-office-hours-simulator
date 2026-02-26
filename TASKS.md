@@ -49,7 +49,7 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
   - [ ] Split into ~500 token segments (~2000 chars)
   - [ ] Attach metadata (`courseId`, `sourceFile`, `sourceType`, `weekNumber`) to each chunk
 - [ ] `server/src/lib/embeddings.js` — `embedChunks(chunks)`:
-  - [ ] Call OpenAI `text-embedding-3-small` (1536 dims)
+  - [ ] Use `@xenova/transformers` with `all-MiniLM-L6-v2` (384 dims, runs locally — no API key)
   - [ ] Return chunks with `embedding` field appended
 - [ ] `server/src/routes/upload.js` — `POST /api/upload`:
   - [ ] `multer` middleware — accept `files[]`, store in `uploads/` temp dir
