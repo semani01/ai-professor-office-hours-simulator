@@ -44,14 +44,14 @@ Keep entries concise. This is a development journal, not documentation.
 - Initial commit included co-author tag — reset with `git update-ref -d HEAD` and recommitted cleanly
 
 **Next:**
-- Supabase project creation (manual — requires dashboard): enable pgvector, run schema SQL from ARCHITECTURE.md
-- Create `server/.env` with API keys
-- Verify Supabase connection from server
-- Cut `feat/phase-1-ingestion` branch and begin ingestion pipeline
+- ~~Supabase project creation (manual — requires dashboard): enable pgvector, run schema SQL from ARCHITECTURE.md~~ ✅
+- ~~Create `server/.env` with API keys~~ ✅
+- ~~Verify Supabase connection from server~~ ✅ — both `chunks` and `interactions` tables reachable
+- ~~Cut `feat/phase-1-ingestion` branch and begin ingestion pipeline~~ ✅
 
 ---
 
-### [Date] — Phase 1: File Ingestion Pipeline
+### 2026-02-26 — Phase 1: File Ingestion Pipeline
 
 **Built:**
 - 
