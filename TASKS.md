@@ -38,28 +38,28 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 **Branch:** `feat/phase-1-ingestion` (branch off `main` before starting)
 
-- [ ] `server/src/lib/parser.js` — `parseFile(filePath, mimeType)`:
-  - [ ] PDF → `pdf-parse`
-  - [ ] DOCX → `mammoth`
-  - [ ] PPTX → `pptx-parser`
-  - [ ] Infer `sourceType` from filename keywords (lecture/notes/assignment/syllabus)
-  - [ ] Infer `weekNumber` via regex on filename (e.g. `Lecture_04` → 4), else null
-  - [ ] Return `{ text, fileName, sourceType, weekNumber }`
-- [ ] `server/src/lib/chunker.js` — `chunkText(text, metadata)`:
-  - [ ] Split into ~500 token segments (~2000 chars)
-  - [ ] Attach metadata (`courseId`, `sourceFile`, `sourceType`, `weekNumber`) to each chunk
-- [ ] `server/src/lib/embeddings.js` — `embedChunks(chunks)`:
-  - [ ] Use `@xenova/transformers` with `all-MiniLM-L6-v2` (384 dims, runs locally — no API key)
-  - [ ] Return chunks with `embedding` field appended
-- [ ] `server/src/routes/upload.js` — `POST /api/upload`:
-  - [ ] `multer` middleware — accept `files[]`, store in `uploads/` temp dir
-  - [ ] Wire full pipeline: parse → chunk → embed → bulk insert into Supabase `chunks`
-  - [ ] Clean up temp files after insert
-  - [ ] Return `{ success: true, ingested: [{ fileName, sourceType, chunkCount }] }`
-- [ ] Register upload route in `server/src/index.js`
-- [ ] Write `server/test-ingest.js` — upload local PDF, log chunk count and sample chunk
-- [ ] Commit and push to `feat/phase-1-ingestion`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 1 log entry (what was built, decisions, problems)
+- [x] `server/src/lib/parser.js` — `parseFile(filePath, mimeType)`:
+  - [x] PDF → `pdf-parse`
+  - [x] DOCX → `mammoth`
+  - [x] PPTX → `adm-zip` + DrawingML XML extraction
+  - [x] Infer `sourceType` from filename keywords (lecture/notes/assignment/syllabus)
+  - [x] Infer `weekNumber` via regex on filename (e.g. `Lecture_04` → 4), else null
+  - [x] Return `{ text, fileName, sourceType, weekNumber }`
+- [x] `server/src/lib/chunker.js` — `chunkText(text, metadata)`:
+  - [x] Split into ~500 token segments (~2000 chars)
+  - [x] Attach metadata (`courseId`, `sourceFile`, `sourceType`, `weekNumber`) to each chunk
+- [x] `server/src/lib/embeddings.js` — `embedChunks(chunks)`:
+  - [x] Use `@xenova/transformers` with `all-MiniLM-L6-v2` (384 dims, runs locally — no API key)
+  - [x] Return chunks with `embedding` field appended
+- [x] `server/src/routes/upload.js` — `POST /api/upload`:
+  - [x] `multer` middleware — accept `files[]`, store in `uploads/` temp dir
+  - [x] Wire full pipeline: parse → chunk → embed → bulk insert into Supabase `chunks`
+  - [x] Clean up temp files after insert
+  - [x] Return `{ success: true, ingested: [{ fileName, sourceType, chunkCount }] }`
+- [x] Register upload route in `server/src/index.js`
+- [x] Write `server/test-ingest.js` — upload local PDF, log chunk count and sample chunk
+- [x] Commit and push to `feat/phase-1-ingestion`; open PR into `main`; merge
+- [x] Update `IMPLEMENTATION.md` — Phase 1 log entry (what was built, decisions, problems)
 
 **Exit condition:** Upload a real lecture PDF via the endpoint. Supabase `chunks` table shows multiple rows with `content`, `embedding` (non-null), and `source_file` populated. PR merged into `main`.
 
@@ -70,27 +70,27 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 **Branch:** `feat/phase-2-retrieval-claude` (branch off `main` before starting)
 
-- [ ] Create `match_chunks` Supabase RPC function (SQL — see `ARCHITECTURE.md`):
+- [x] Create `match_chunks` Supabase RPC function (SQL — see `ARCHITECTURE.md`):
   - Cosine similarity search on `chunks` table, filtered by `course_id`, returns top K with similarity score
-- [ ] `server/src/lib/retrieval.js` — `retrieveChunks(question, courseId, topK=5)`:
-  - [ ] Embed question via `embeddings.js`
-  - [ ] Call `supabase.rpc('match_chunks', ...)`, return top 5 chunks with metadata
-- [ ] `server/src/lib/claude.js` — `generateResponse(message, history, chunks, sessionId)`:
-  - [ ] Build context string from retrieved chunks (label each with source + week)
-  - [ ] Copy system prompt verbatim from `PROMPTS.md`
-  - [ ] Construct messages array: context + last 10 history messages + current message
-  - [ ] Call `anthropic.messages.create({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024 })`
-  - [ ] Log to Supabase `interactions` (sessionId, question, created_at)
-  - [ ] Return `{ response, sources[] }`
-- [ ] `server/src/routes/chat.js` — `POST /api/chat`:
-  - [ ] Accept `{ message, history, sessionId, courseId }`
-  - [ ] Call `retrieveChunks` → `generateResponse` → return response + sources
-  - [ ] Handle errors: no chunks found, API failure
-- [ ] Register chat route in `server/src/index.js`
-- [ ] Test via Postman: ask an SPM-specific question → verify Socratic response citing the correct week
-- [ ] Iterate on system prompt if behavior is off (log issues in `PROMPTS.md` tuning table)
-- [ ] Commit and push to `feat/phase-2-retrieval-claude`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 2 log entry (what was built, decisions, problems)
+- [x] `server/src/lib/retrieval.js` — `retrieveChunks(question, courseId, topK=5)`:
+  - [x] Embed question via `embeddings.js`
+  - [x] Call `supabase.rpc('match_chunks', ...)`, return top 5 chunks with metadata
+- [x] `server/src/lib/claude.js` — `generateResponse(message, history, chunks, sessionId)`:
+  - [x] Build context string from retrieved chunks (label each with source + week)
+  - [x] Copy system prompt verbatim from `PROMPTS.md`
+  - [x] Construct messages array: context + last 10 history messages + current message
+  - [x] Call `anthropic.messages.create({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024 })`
+  - [x] Log to Supabase `interactions` (sessionId, question, created_at)
+  - [x] Return `{ response, sources[] }`
+- [x] `server/src/routes/chat.js` — `POST /api/chat`:
+  - [x] Accept `{ message, history, sessionId, courseId }`
+  - [x] Call `retrieveChunks` → `generateResponse` → return response + sources
+  - [x] Handle errors: no chunks found, API failure
+- [x] Register chat route in `server/src/index.js`
+- [x] Test via Postman: ask an SPM-specific question → verify Socratic response citing the correct week
+- [x] Iterate on system prompt if behavior is off (log issues in `PROMPTS.md` tuning table)
+- [x] Commit and push to `feat/phase-2-retrieval-claude`; open PR into `main`; merge
+- [x] Update `IMPLEMENTATION.md` — Phase 2 log entry (what was built, decisions, problems)
 
 **Exit condition:** Postman POST to `/api/chat` returns a grounded Socratic response referencing "Week X" and asks the student a follow-up question — no direct answer given. PR merged into `main`.
 
@@ -247,8 +247,8 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | Phase | Status |
 |-------|--------|
 | 0 — Setup | ✅ Done |
-| 1 — Ingestion Pipeline | 🔄 In progress |
-| 2 — Retrieval + Claude | ⬜ Not started |
+| 1 — Ingestion Pipeline | ✅ Done |
+| 2 — Retrieval + Claude | ✅ Done |
 | 3 — Frontend Core | ⬜ Not started |
 | 4 — Weak Spot Dashboard | ⬜ Not started |
 | 5 — Polish | ⬜ Not started |

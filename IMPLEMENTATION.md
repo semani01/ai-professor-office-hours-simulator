@@ -47,39 +47,55 @@ Keep entries concise. This is a development journal, not documentation.
 - ~~Supabase project creation (manual — requires dashboard): enable pgvector, run schema SQL from ARCHITECTURE.md~~ ✅
 - ~~Create `server/.env` with API keys~~ ✅
 - ~~Verify Supabase connection from server~~ ✅ — both `chunks` and `interactions` tables reachable
-- Cut `feat/phase-1-ingestion` branch and begin ingestion pipeline ✅
+- ~~Cut `feat/phase-1-ingestion` branch and begin ingestion pipeline~~ ✅
 
 ---
 
 ### 2026-02-26 — Phase 1: File Ingestion Pipeline
 
 **Built:**
--
+- `server/src/lib/parser.js` — `parseFile()` extracts raw text from PDF (pdf-parse), DOCX (mammoth), PPTX (adm-zip + DrawingML XML parsing); infers `sourceType` from filename keywords; infers `weekNumber` via regex
+- `server/src/lib/chunker.js` — `chunkText()` splits on paragraph boundaries into ~500-token (~2000 char) segments with 200-char overlap; hard-splits oversized single paragraphs
+- `server/src/lib/embeddings.js` — `embedChunks()` lazy-loads `all-MiniLM-L6-v2` via `@xenova/transformers`; mean-pools + normalizes to 384-dim float vectors; model cached after first download (~50MB)
+- `server/src/routes/upload.js` — `POST /api/upload` wires full pipeline: multer → parse → chunk → embed → Supabase bulk insert → temp file cleanup; returns `{ success, ingested[], errors[] }`
+- `server/test-ingest.js` — CLI smoke test; verified against real SWPMS lecture PDF: 8 chunks, 384-dim embeddings, all rows in Supabase
 
 **Decisions:**
--
+- Local embeddings via `@xenova/transformers` (zero cost, no API key) — model downloaded once and cached
+- PPTX parsed by reading the zip archive directly with `adm-zip` and extracting `<a:t>` DrawingML text nodes — avoids a heavy PPTX-specific dependency
+- `pdf-parse` pinned to `1.1.1` — newer versions export a class instead of a function and flood stderr with minified source on load
+- `adm-zip` added as dependency for PPTX support
 
 **Problems:**
--
+- `pdf-parse` latest version breaking change: exports `{ PDFParse }` class, not a callable function; downgraded to `1.1.1` which is the stable well-known API
 
 **Next:**
--
+- ~~Commit and push Phase 1~~ ✅
+- Cut `feat/phase-2-retrieval-claude`, create `match_chunks` Supabase RPC, build retrieval + Claude response generation
 
 ---
 
-### [Date] — Phase 2: Retrieval & Claude Integration
+### 2026-02-26 — Phase 2: Retrieval & Claude Integration
 
 **Built:**
-- 
+- `match_chunks` Supabase RPC — cosine similarity search on `chunks` table filtered by `course_id`, returns top K rows with similarity score; uses `embedding <=>` pgvector operator
+- `server/src/lib/retrieval.js` — `retrieveChunks()` embeds the question via `embeddings.js` and calls the RPC; returns top 5 chunks with metadata
+- `server/src/lib/claude.js` — `generateResponse()` builds formatted context block from chunks, constructs messages array (context injection + last 10 history + current message), calls `claude-haiku-4-5-20251001`, logs interaction to `interactions` table (fire-and-forget), returns `{ response, sources[] }`
+- `server/src/routes/chat.js` — `POST /api/chat` wires retrieveChunks → generateResponse; handles missing message/sessionId and API error cases
+- Registered chat route in `server/src/index.js`
 
 **Decisions:**
-- 
+- System prompt copied verbatim from `PROMPTS.md` — all 7 constraints intact
+- Context injected as a synthetic first user/assistant exchange so Claude "sees" materials before history — avoids prompt injection from history and keeps context separate
+- Topic tagging done via keyword matching (not a Claude mini-call) — zero latency, zero cost; good enough for the demo's SPM domain
+- Interaction logging is fire-and-forget (`.then()`) so it never blocks the chat response
 
 **Problems:**
-- 
+- None — pipeline worked on first test
 
 **Next:**
-- 
+- ~~Commit and push Phase 2~~ ✅
+- Cut `feat/phase-3-frontend`, build FileUpload, ChatPanel, SourceCitation, useUpload, useChat
 
 ---
 
