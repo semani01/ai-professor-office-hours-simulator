@@ -9,25 +9,25 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 **Branch:** `main` (this phase establishes it)
 
-- [ ] **Git & GitHub setup:**
-  - [ ] `git init` in project root (if not already done)
-  - [ ] Create GitHub repo (`ai-professor-office-hours-simulator`) — public or private
-  - [ ] Create initial commit with existing docs (`README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `PROMPTS.md`, `DEMO.md`, `IMPLEMENTATION.md`, `TASKS.md`, `.env.example`, `.gitignore`)
-  - [ ] Push to GitHub and confirm `main` branch is set as default
-- [ ] **Server scaffold:**
-  - [ ] `server/` — `npm init`, install dependencies: `express cors dotenv multer @supabase/supabase-js @anthropic-ai/sdk openai pdf-parse mammoth`
-  - [ ] `server/src/index.js` — Express app with `/health` endpoint, CORS, JSON middleware, port 3001
-- [ ] **Client scaffold:**
-  - [ ] `client/` — `npm create vite@latest` (React template)
-  - [ ] Install and configure Tailwind CSS; confirm a styled element renders
-- [ ] **Supabase:**
-  - [ ] Create Supabase project; enable `pgvector` extension (`CREATE EXTENSION vector`)
-  - [ ] Run schema SQL from `ARCHITECTURE.md` — create `chunks` and `interactions` tables + IVFFlat index
-  - [ ] Initialize Supabase client in `server/src/db/supabase.js`; confirm connection
-- [ ] Create `server/.env` (not committed) with all keys: `CLAUDE_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `PORT=3001`
-- [ ] Verify `.env.example` and `.gitignore` are committed (`.env` and `node_modules` excluded)
-- [ ] Commit all scaffold code and push to `main`
-- [ ] Update `IMPLEMENTATION.md` — Phase 0 log entry (what was built, decisions, problems)
+- [x] **Git & GitHub setup:**
+  - [x] `git init` in project root (if not already done)
+  - [x] Create GitHub repo (`ai-professor-office-hours-simulator`) — public or private
+  - [x] Create initial commit with existing docs (`README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `PROMPTS.md`, `DEMO.md`, `IMPLEMENTATION.md`, `TASKS.md`, `.env.example`, `.gitignore`)
+  - [x] Push to GitHub and confirm `main` branch is set as default
+- [x] **Server scaffold:**
+  - [x] `server/` — `npm init`, install dependencies: `express cors dotenv multer @supabase/supabase-js @anthropic-ai/sdk pdf-parse mammoth`
+  - [x] `server/src/index.js` — Express app with `/health` endpoint, CORS, JSON middleware, port 3001
+- [x] **Client scaffold:**
+  - [x] `client/` — `npm create vite@latest` (React template)
+  - [x] Install and configure Tailwind CSS v4; confirm a styled element renders
+- [x] **Supabase:**
+  - [x] Create Supabase project; enable `pgvector` extension (`CREATE EXTENSION vector`)
+  - [x] Run schema SQL from `ARCHITECTURE.md` — create `chunks` and `interactions` tables + IVFFlat index
+  - [x] Initialize Supabase client in `server/src/db/supabase.js`; confirm connection
+- [x] Create `server/.env` (not committed) with all keys: `CLAUDE_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `PORT=3001`
+- [x] Verify `.env.example` and `.gitignore` are committed (`.env` and `node_modules` excluded)
+- [x] Commit all scaffold code and push to `main`
+- [x] Update `IMPLEMENTATION.md` — Phase 0 log entry (what was built, decisions, problems)
 
 **Exit condition:** `curl localhost:3001/health` → `{"status":"ok"}`. React renders on 5173 with Tailwind. Supabase client connects without error. `main` branch on GitHub has the full scaffold.
 
@@ -38,28 +38,28 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 **Branch:** `feat/phase-1-ingestion` (branch off `main` before starting)
 
-- [ ] `server/src/lib/parser.js` — `parseFile(filePath, mimeType)`:
-  - [ ] PDF → `pdf-parse`
-  - [ ] DOCX → `mammoth`
-  - [ ] PPTX → `pptx-parser`
-  - [ ] Infer `sourceType` from filename keywords (lecture/notes/assignment/syllabus)
-  - [ ] Infer `weekNumber` via regex on filename (e.g. `Lecture_04` → 4), else null
-  - [ ] Return `{ text, fileName, sourceType, weekNumber }`
-- [ ] `server/src/lib/chunker.js` — `chunkText(text, metadata)`:
-  - [ ] Split into ~500 token segments (~2000 chars)
-  - [ ] Attach metadata (`courseId`, `sourceFile`, `sourceType`, `weekNumber`) to each chunk
-- [ ] `server/src/lib/embeddings.js` — `embedChunks(chunks)`:
-  - [ ] Use `@xenova/transformers` with `all-MiniLM-L6-v2` (384 dims, runs locally — no API key)
-  - [ ] Return chunks with `embedding` field appended
-- [ ] `server/src/routes/upload.js` — `POST /api/upload`:
-  - [ ] `multer` middleware — accept `files[]`, store in `uploads/` temp dir
-  - [ ] Wire full pipeline: parse → chunk → embed → bulk insert into Supabase `chunks`
-  - [ ] Clean up temp files after insert
-  - [ ] Return `{ success: true, ingested: [{ fileName, sourceType, chunkCount }] }`
-- [ ] Register upload route in `server/src/index.js`
-- [ ] Write `server/test-ingest.js` — upload local PDF, log chunk count and sample chunk
-- [ ] Commit and push to `feat/phase-1-ingestion`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 1 log entry (what was built, decisions, problems)
+- [x] `server/src/lib/parser.js` — `parseFile(filePath, mimeType)`:
+  - [x] PDF → `pdf-parse`
+  - [x] DOCX → `mammoth`
+  - [x] PPTX → `adm-zip` + DrawingML XML extraction
+  - [x] Infer `sourceType` from filename keywords (lecture/notes/assignment/syllabus)
+  - [x] Infer `weekNumber` via regex on filename (e.g. `Lecture_04` → 4), else null
+  - [x] Return `{ text, fileName, sourceType, weekNumber }`
+- [x] `server/src/lib/chunker.js` — `chunkText(text, metadata)`:
+  - [x] Split into ~500 token segments (~2000 chars)
+  - [x] Attach metadata (`courseId`, `sourceFile`, `sourceType`, `weekNumber`) to each chunk
+- [x] `server/src/lib/embeddings.js` — `embedChunks(chunks)`:
+  - [x] Use `@xenova/transformers` with `all-MiniLM-L6-v2` (384 dims, runs locally — no API key)
+  - [x] Return chunks with `embedding` field appended
+- [x] `server/src/routes/upload.js` — `POST /api/upload`:
+  - [x] `multer` middleware — accept `files[]`, store in `uploads/` temp dir
+  - [x] Wire full pipeline: parse → chunk → embed → bulk insert into Supabase `chunks`
+  - [x] Clean up temp files after insert
+  - [x] Return `{ success: true, ingested: [{ fileName, sourceType, chunkCount }] }`
+- [x] Register upload route in `server/src/index.js`
+- [x] Write `server/test-ingest.js` — upload local PDF, log chunk count and sample chunk
+- [x] Commit and push to `feat/phase-1-ingestion`; open PR into `main`; merge
+- [x] Update `IMPLEMENTATION.md` — Phase 1 log entry (what was built, decisions, problems)
 
 **Exit condition:** Upload a real lecture PDF via the endpoint. Supabase `chunks` table shows multiple rows with `content`, `embedding` (non-null), and `source_file` populated. PR merged into `main`.
 
@@ -246,8 +246,8 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 | Phase | Status |
 |-------|--------|
-| 0 — Setup | ⬜ Not started |
-| 1 — Ingestion Pipeline | ⬜ Not started |
+| 0 — Setup | ✅ Done |
+| 1 — Ingestion Pipeline | ✅ Done |
 | 2 — Retrieval + Claude | ⬜ Not started |
 | 3 — Frontend Core | ⬜ Not started |
 | 4 — Weak Spot Dashboard | ⬜ Not started |
