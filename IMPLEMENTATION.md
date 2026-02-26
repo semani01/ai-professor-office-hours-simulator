@@ -54,16 +54,24 @@ Keep entries concise. This is a development journal, not documentation.
 ### 2026-02-26 — Phase 1: File Ingestion Pipeline
 
 **Built:**
-- 
+- `server/src/lib/parser.js` — `parseFile()` extracts raw text from PDF (pdf-parse), DOCX (mammoth), PPTX (adm-zip + DrawingML XML parsing); infers `sourceType` from filename keywords; infers `weekNumber` via regex
+- `server/src/lib/chunker.js` — `chunkText()` splits on paragraph boundaries into ~500-token (~2000 char) segments with 200-char overlap; hard-splits oversized single paragraphs
+- `server/src/lib/embeddings.js` — `embedChunks()` lazy-loads `all-MiniLM-L6-v2` via `@xenova/transformers`; mean-pools + normalizes to 384-dim float vectors; model cached after first download (~50MB)
+- `server/src/routes/upload.js` — `POST /api/upload` wires full pipeline: multer → parse → chunk → embed → Supabase bulk insert → temp file cleanup; returns `{ success, ingested[], errors[] }`
+- `server/test-ingest.js` — CLI smoke test; verified against real SWPMS lecture PDF: 8 chunks, 384-dim embeddings, all rows in Supabase
 
 **Decisions:**
-- 
+- Local embeddings via `@xenova/transformers` (zero cost, no API key) — model downloaded once and cached
+- PPTX parsed by reading the zip archive directly with `adm-zip` and extracting `<a:t>` DrawingML text nodes — avoids a heavy PPTX-specific dependency
+- `pdf-parse` pinned to `1.1.1` — newer versions export a class instead of a function and flood stderr with minified source on load
+- `adm-zip` added as dependency for PPTX support
 
 **Problems:**
-- 
+- `pdf-parse` latest version breaking change: exports `{ PDFParse }` class, not a callable function; downgraded to `1.1.1` which is the stable well-known API
 
 **Next:**
-- 
+- ~~Commit and push Phase 1~~ ✅
+- Cut `feat/phase-2-retrieval-claude`, create `match_chunks` Supabase RPC, build retrieval + Claude response generation
 
 ---
 
