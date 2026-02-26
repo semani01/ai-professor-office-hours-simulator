@@ -32,8 +32,8 @@ The system has three distinct phases of operation:
 │  chunker.js — splits text into ~500 token semantic segments     │
 │    · preserves metadata: source file, type, week number         │
 │         ↓                                                        │
-│  embeddings.js — calls OpenAI text-embedding-3-small            │
-│    · returns 1536-dimension vector per chunk                     │
+│  embeddings.js — runs all-MiniLM-L6-v2 locally (Transformers.js)│
+│    · returns 384-dimension vector per chunk                      │
 │         ↓                                                        │
 │  supabase.js — stores chunk text + vector + metadata            │
 │    · table: chunks                                               │
@@ -96,8 +96,8 @@ Lightweight, familiar, no boilerplate overhead. The backend has exactly three jo
 ### AI Chat: Claude API — claude-haiku-4-5-20251001
 Haiku is fast, cost-efficient, and follows complex system prompt instructions reliably. The Socratic constraint requires a model that can resist adversarial prompting ("just tell me the answer") while maintaining a coherent tutoring persona. Use the claude-haiku-4-5-20251001 model string.
 
-### AI Embeddings: OpenAI text-embedding-3-small
-Best quality-to-cost ratio for embeddings. Produces 1536-dimension vectors. Even though the chat layer uses Claude, OpenAI's embedding model is used here because it is the industry standard for RAG applications and produces superior semantic representations compared to alternatives at this price point. Budget approximately $2–3 USD for the full demo ingestion and query load.
+### AI Embeddings: Transformers.js — all-MiniLM-L6-v2 (local)
+Embeddings run locally in Node.js via `@xenova/transformers`. No OpenAI account or API key required. The `all-MiniLM-L6-v2` model produces 384-dimension vectors and is well-suited for semantic similarity tasks. The model (~50MB) is downloaded once on first run and cached locally. Zero ongoing cost.
 
 ### Vector Database: Supabase + pgvector
 Supabase gives us a single platform for the vector store, the interactions log, and file metadata. The pgvector Postgres extension handles similarity search natively — no need to manage a separate vector DB service like Pinecone. The free tier is sufficient for the demo. Setup is fast and the dashboard is easy to inspect during development.
@@ -129,7 +129,7 @@ create table chunks (
   source_type  text not null,      -- 'lecture' | 'notes' | 'syllabus' | 'assignment'
   week_number  int,                -- nullable; extracted from file name or content
   content      text not null,
-  embedding    vector(1536),       -- OpenAI text-embedding-3-small output dimension
+  embedding    vector(384),         -- all-MiniLM-L6-v2 output dimension (local Transformers.js)
   created_at   timestamp default now()
 );
 
