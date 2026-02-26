@@ -1,13 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useChat } from '../hooks/useChat';
 import { SourceCitation } from './SourceCitation';
 
 function TypingDots() {
   return (
-    <div className="flex items-center gap-1 px-4 py-3">
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '14px 16px' }}>
+      {[0, 150, 300].map((delay) => (
+        <span key={delay} style={{
+          width: 7, height: 7, borderRadius: '50%', background: '#475569',
+          display: 'inline-block',
+          animation: 'bounce 1.2s ease-in-out infinite',
+          animationDelay: `${delay}ms`,
+        }} />
+      ))}
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+          40% { transform: translateY(-5px); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -16,8 +28,8 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
   const { messages, loading, error, sendMessage } = useChat(courseId);
   const [input, setInput] = useState('');
   const bottomRef = useRef(null);
+  const textareaRef = useRef(null);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
@@ -26,6 +38,9 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
     const text = input.trim();
     if (!text || loading || !hasUploads) return;
     setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     sendMessage(text);
   }
 
@@ -37,13 +52,24 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Course context bar */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f1117' }}>
+      {/* Active materials bar */}
       {uploadedFiles.length > 0 && (
-        <div className="px-4 py-2 bg-indigo-50 border-b border-indigo-100 flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">Active materials:</span>
+        <div style={{
+          padding: '8px 20px', borderBottom: '1px solid #1e293b',
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+          background: '#0d1117', flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>
+            Active:
+          </span>
           {uploadedFiles.map((f, i) => (
-            <span key={i} className="text-xs bg-white border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full truncate max-w-[200px]">
+            <span key={i} style={{
+              fontSize: 11, padding: '2px 8px', borderRadius: 10,
+              background: '#1e1b4b', color: '#818cf8',
+              border: '1px solid #312e81',
+              maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
               {f.fileName}
             </span>
           ))}
@@ -51,31 +77,69 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
       )}
 
       {/* Message thread */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {messages.length === 0 && !loading && (
-          <div className="flex-1 flex items-center justify-center text-center text-gray-400 py-16">
-            <div>
-              <p className="text-4xl mb-3">🎓</p>
-              <p className="text-sm font-medium text-gray-500">
-                {hasUploads
-                  ? 'Ask me anything about your course materials'
-                  : 'Upload your course materials to begin'}
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: 12, color: '#475569', paddingTop: 80,
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
+              border: '1px solid #312e81',
+            }}>🎓</div>
+            <p style={{ fontSize: 14, color: '#334155', margin: 0, fontWeight: 500 }}>
+              {hasUploads
+                ? 'What would you like to understand better?'
+                : 'Upload your course materials to get started'}
+            </p>
+            {hasUploads && (
+              <p style={{ fontSize: 12, color: '#1e293b', margin: 0 }}>
+                I'll guide you Socratically — no direct answers, just good questions
               </p>
-            </div>
+            )}
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col`}>
-              <div
-                className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                  msg.role === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-sm'
-                    : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm'
-                }`}
-              >
-                {msg.content}
+          <div key={i} style={{
+            display: 'flex',
+            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+          }}>
+            {/* Avatar for assistant */}
+            {msg.role === 'assistant' && (
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, marginRight: 10, marginTop: 2, alignSelf: 'flex-start',
+              }}>🎓</div>
+            )}
+
+            <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              <div style={{
+                padding: '12px 16px',
+                borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                fontSize: 14, lineHeight: 1.6,
+                ...(msg.role === 'user'
+                  ? {
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      color: '#fff',
+                    }
+                  : {
+                      background: '#111827',
+                      border: '1px solid #1e293b',
+                      color: '#cbd5e1',
+                    }),
+              }}>
+                {msg.role === 'assistant' ? (
+                  <div className="prose-chat">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  msg.content
+                )}
               </div>
               {msg.role === 'assistant' && msg.sources?.length > 0 && (
                 <SourceCitation sources={msg.sources} />
@@ -85,18 +149,25 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
         ))}
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm shadow-sm">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+            }}>🎓</div>
+            <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: '18px 18px 18px 4px' }}>
               <TypingDots />
             </div>
           </div>
         )}
 
         {error && (
-          <div className="flex justify-center">
-            <div className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
-              ⚠️ {error}
-            </div>
+          <div style={{
+            textAlign: 'center', fontSize: 12, color: '#fca5a5',
+            background: '#450a0a', border: '1px solid #7f1d1d',
+            padding: '8px 14px', borderRadius: 8, alignSelf: 'center',
+          }}>
+            ⚠️ {error}
           </div>
         )}
 
@@ -104,22 +175,30 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-gray-200 p-4">
-        {!hasUploads && (
-          <p className="text-xs text-center text-gray-400 mb-3">
-            Upload your course materials above to start asking questions
-          </p>
-        )}
-        <div className="flex gap-2">
+      <div style={{
+        borderTop: '1px solid #1e293b', padding: '16px 20px',
+        background: '#0d1117', flexShrink: 0,
+      }}>
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-end',
+          background: '#111827', border: `1px solid ${hasUploads ? '#334155' : '#1e293b'}`,
+          borderRadius: 14, padding: '8px 8px 8px 16px',
+          transition: 'border-color 0.15s',
+        }}>
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={!hasUploads || loading}
             placeholder={hasUploads ? 'Ask a question about your course...' : 'Upload materials to begin'}
             rows={1}
-            className="flex-1 resize-none px-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-            style={{ maxHeight: '120px' }}
+            style={{
+              flex: 1, resize: 'none', border: 'none', outline: 'none',
+              background: 'transparent', color: '#e2e8f0', fontSize: 14, lineHeight: 1.5,
+              maxHeight: 120, fontFamily: 'inherit',
+              cursor: !hasUploads ? 'not-allowed' : 'text',
+            }}
             onInput={(e) => {
               e.target.style.height = 'auto';
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
@@ -128,11 +207,24 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
           <button
             onClick={handleSend}
             disabled={!hasUploads || loading || !input.trim()}
-            className="px-4 py-3 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            style={{
+              width: 36, height: 36, borderRadius: 10, border: 'none',
+              background: !hasUploads || loading || !input.trim()
+                ? '#1e293b'
+                : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: !hasUploads || loading || !input.trim() ? '#475569' : '#fff',
+              cursor: !hasUploads || loading || !input.trim() ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, flexShrink: 0,
+              transition: 'all 0.15s',
+            }}
           >
-            {loading ? '...' : 'Send'}
+            {loading ? '⏳' : '↑'}
           </button>
         </div>
+        <p style={{ fontSize: 11, color: '#1e293b', textAlign: 'center', margin: '8px 0 0', letterSpacing: '0.01em' }}>
+          Enter to send · Shift+Enter for new line
+        </p>
       </div>
     </div>
   );

@@ -14,30 +14,64 @@ export default function App() {
   const hasUploads = uploadedFiles.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f1117' }}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-lg font-semibold text-gray-900">AI Professor Office Hours</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Upload your course materials, then ask questions — Socratic style</p>
+      <header style={{
+        borderBottom: '1px solid #1e293b',
+        padding: '14px 28px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: '#0f1117',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16,
+          }}>🎓</div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9', letterSpacing: '-0.01em' }}>
+              AI Professor Office Hours
+            </div>
+            <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>
+              Socratic tutor grounded in your course materials
+            </div>
+          </div>
+        </div>
+        <div style={{
+          fontSize: 11, color: '#6366f1', background: '#1e1b4b',
+          padding: '4px 10px', borderRadius: 20, border: '1px solid #312e81',
+          fontWeight: 500,
+        }}>
+          {hasUploads ? `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} loaded` : 'No materials'}
         </div>
       </header>
 
-      {/* Main layout: two-column */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-6 flex gap-6 min-h-0">
-        {/* Left sidebar: file upload */}
-        <aside className="w-72 shrink-0 flex flex-col gap-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Course Materials</h2>
-            <FileUpload
-              courseId={COURSE_ID}
-              onFilesIngested={handleFilesIngested}
-            />
+      {/* Main layout */}
+      <main style={{
+        flex: 1, display: 'flex', gap: 0, overflow: 'hidden',
+      }}>
+        {/* Left sidebar */}
+        <aside style={{
+          width: 280, borderRight: '1px solid #1e293b',
+          display: 'flex', flexDirection: 'column',
+          background: '#0d1117', flexShrink: 0, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '16px 16px 8px', borderBottom: '1px solid #1e293b' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Course Materials
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+            <FileUpload courseId={COURSE_ID} onFilesIngested={handleFilesIngested} />
           </div>
         </aside>
 
-        {/* Right: chat panel */}
-        <section className="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+        {/* Chat area */}
+        <section style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <ChatPanel
             courseId={COURSE_ID}
             uploadedFiles={uploadedFiles}

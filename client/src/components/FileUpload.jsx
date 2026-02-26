@@ -10,11 +10,17 @@ const ACCEPTED_MIME = [
 const MAX_SIZE_MB = 10;
 
 const SOURCE_TYPE_COLORS = {
-  lecture: 'bg-blue-100 text-blue-700',
-  notes: 'bg-green-100 text-green-700',
-  assignment: 'bg-orange-100 text-orange-700',
-  syllabus: 'bg-purple-100 text-purple-700',
-  material: 'bg-gray-100 text-gray-700',
+  lecture:    { bg: '#1e1b4b', text: '#818cf8', border: '#312e81' },
+  notes:      { bg: '#052e16', text: '#4ade80', border: '#14532d' },
+  assignment: { bg: '#431407', text: '#fb923c', border: '#7c2d12' },
+  syllabus:   { bg: '#2e1065', text: '#c084fc', border: '#4c1d95' },
+  material:   { bg: '#1e293b', text: '#94a3b8', border: '#334155' },
+};
+
+const FILE_ICONS = {
+  pdf: '📕',
+  docx: '📘',
+  pptx: '📙',
 };
 
 export function FileUpload({ courseId, onFilesIngested }) {
@@ -26,11 +32,11 @@ export function FileUpload({ courseId, onFilesIngested }) {
   function validateFiles(fileList) {
     for (const file of fileList) {
       if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        return `"${file.name}" is too large. Maximum file size is ${MAX_SIZE_MB}MB.`;
+        return `"${file.name}" exceeds ${MAX_SIZE_MB}MB limit.`;
       }
       const ext = '.' + file.name.split('.').pop().toLowerCase();
       if (!ACCEPTED_TYPES.includes(ext) && !ACCEPTED_MIME.includes(file.type)) {
-        return `"${file.name}" is not supported. Please upload PDF, DOCX, or PPTX files only.`;
+        return `"${file.name}" is unsupported. PDF, DOCX, PPTX only.`;
       }
     }
     return null;
@@ -40,11 +46,8 @@ export function FileUpload({ courseId, onFilesIngested }) {
     setValidationError(null);
     const err = validateFiles(Array.from(fileList));
     if (err) { setValidationError(err); return; }
-
     const result = await uploadFiles(fileList, courseId);
-    if (result?.ingested?.length > 0 && onFilesIngested) {
-      onFilesIngested(result.ingested);
-    }
+    if (result?.ingested?.length > 0 && onFilesIngested) onFilesIngested(result.ingested);
   }
 
   function onDrop(e) {
@@ -56,73 +59,105 @@ export function FileUpload({ courseId, onFilesIngested }) {
   const displayError = validationError || error;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Drop zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         onClick={() => !uploading && inputRef.current?.click()}
-        className={`
-          border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors
-          ${dragOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300 hover:border-indigo-300 hover:bg-gray-50'}
-          ${uploading ? 'opacity-60 cursor-not-allowed' : ''}
-        `}
+        style={{
+          border: `2px dashed ${dragOver ? '#6366f1' : '#1e293b'}`,
+          borderRadius: 12,
+          padding: '20px 16px',
+          textAlign: 'center',
+          cursor: uploading ? 'not-allowed' : 'pointer',
+          background: dragOver ? '#1e1b4b22' : 'transparent',
+          transition: 'all 0.15s ease',
+        }}
       >
         <input
           ref={inputRef}
           type="file"
           multiple
           accept={ACCEPTED_TYPES.join(',')}
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={(e) => e.target.files?.length && handleFiles(e.target.files)}
           disabled={uploading}
         />
 
         {uploading ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-indigo-600 font-medium">Processing files...</p>
-            <p className="text-xs text-gray-400">Parsing, chunking, and embedding — this may take a moment</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 24, height: 24,
+              border: '2px solid #6366f1', borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <p style={{ fontSize: 12, color: '#6366f1', margin: 0, fontWeight: 500 }}>Processing...</p>
+            <p style={{ fontSize: 11, color: '#475569', margin: 0 }}>Chunking & embedding</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-3xl">📂</span>
-            <p className="text-sm font-medium text-gray-700">Drop files here or click to browse</p>
-            <p className="text-xs text-gray-400">PDF, DOCX, PPTX · Max {MAX_SIZE_MB}MB each</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 24 }}>📂</div>
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
+              Drop files or click to browse
+            </p>
+            <p style={{ fontSize: 11, color: '#334155', margin: 0 }}>
+              PDF · DOCX · PPTX · max {MAX_SIZE_MB}MB
+            </p>
           </div>
         )}
       </div>
 
       {/* Error */}
       {displayError && (
-        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div style={{
+          padding: '8px 12px', borderRadius: 8,
+          background: '#450a0a', border: '1px solid #7f1d1d',
+          fontSize: 12, color: '#fca5a5',
+          display: 'flex', gap: 6, alignItems: 'flex-start',
+        }}>
           <span>⚠️</span>
           <span>{displayError}</span>
         </div>
       )}
 
-      {/* Ingested files list */}
+      {/* Ingested files */}
       {files.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Uploaded Materials</p>
-          {files.map((f, i) => (
-            <div key={i} className="flex items-center justify-between p-2.5 bg-white border border-gray-200 rounded-lg">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base">📄</span>
-                <span className="text-sm text-gray-700 truncate">{f.fileName}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {files.map((f, i) => {
+            const ext = f.fileName.split('.').pop().toLowerCase();
+            const icon = FILE_ICONS[ext] || '📄';
+            const colors = SOURCE_TYPE_COLORS[f.sourceType] || SOURCE_TYPE_COLORS.material;
+            return (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 10px', borderRadius: 8,
+                background: '#111827', border: '1px solid #1e293b',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
+                  <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {f.fileName.length > 28 ? f.fileName.slice(0, 25) + '...' : f.fileName}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 8 }}>
+                  {f.weekNumber && (
+                    <span style={{ fontSize: 10, color: '#475569' }}>Wk {f.weekNumber}</span>
+                  )}
+                  <span style={{
+                    fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 500,
+                    background: colors.bg, color: colors.text, border: `1px solid ${colors.border}`,
+                    textTransform: 'capitalize',
+                  }}>
+                    {f.sourceType}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0 ml-2">
-                {f.weekNumber && (
-                  <span className="text-xs text-gray-400">Wk {f.weekNumber}</span>
-                )}
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${SOURCE_TYPE_COLORS[f.sourceType] || SOURCE_TYPE_COLORS.material}`}>
-                  {f.sourceType}
-                </span>
-                <span className="text-xs text-gray-400">{f.chunkCount} chunks</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

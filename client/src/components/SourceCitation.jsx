@@ -1,45 +1,56 @@
 import { useState } from 'react';
 
 const SOURCE_TYPE_LABELS = {
-  lecture: 'Lecture',
-  notes: 'Notes',
-  assignment: 'Assignment',
-  syllabus: 'Syllabus',
-  material: 'Material',
+  lecture: 'Lecture', notes: 'Notes', assignment: 'Assignment',
+  syllabus: 'Syllabus', material: 'Material',
 };
 
 export function SourceCitation({ sources }) {
   const [expanded, setExpanded] = useState(null);
-
   if (!sources || sources.length === 0) return null;
 
-  // Deduplicate by sourceFile so we don't show the same file 5 times
   const unique = sources.filter(
     (s, i, arr) => arr.findIndex((x) => x.sourceFile === s.sourceFile) === i
   );
 
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
       {unique.map((source, i) => {
         const label = SOURCE_TYPE_LABELS[source.sourceType] || 'Source';
-        const week = source.weekNumber ? `Week ${source.weekNumber}` : null;
-        const tag = week ? `${week} · ${label}` : label;
+        const tag = source.weekNumber ? `Week ${source.weekNumber} · ${label}` : label;
         const isOpen = expanded === i;
 
         return (
-          <div key={i} className="relative">
+          <div key={i} style={{ position: 'relative' }}>
             <button
               onClick={() => setExpanded(isOpen ? null : i)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
+                background: '#1e1b4b', color: '#818cf8',
+                border: '1px solid #312e81', cursor: 'pointer',
+                transition: 'all 0.1s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#312e81'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#1e1b4b'}
             >
-              <span>📄</span>
+              <span style={{ fontSize: 10 }}>📄</span>
               <span>{tag}</span>
             </button>
 
             {isOpen && source.excerpt && (
-              <div className="absolute bottom-full left-0 mb-1 z-10 w-72 p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-xs text-gray-600 leading-relaxed">
-                <p className="font-medium text-gray-800 mb-1 truncate">{source.sourceFile}</p>
-                <p className="italic">"{source.excerpt}..."</p>
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, marginBottom: 6,
+                zIndex: 50, width: 280, padding: '10px 12px',
+                background: '#1e293b', border: '1px solid #334155',
+                borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: '#e2e8f0', margin: '0 0 4px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {source.sourceFile}
+                </p>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
+                  "{source.excerpt}..."
+                </p>
               </div>
             )}
           </div>
