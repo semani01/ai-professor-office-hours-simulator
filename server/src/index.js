@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const uploadRouter = require('./routes/upload');
+const chatRouter = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,6 +16,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api', uploadRouter);
+app.use('/api', chatRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

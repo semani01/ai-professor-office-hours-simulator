@@ -75,19 +75,27 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
-### [Date] — Phase 2: Retrieval & Claude Integration
+### 2026-02-26 — Phase 2: Retrieval & Claude Integration
 
 **Built:**
-- 
+- `match_chunks` Supabase RPC — cosine similarity search on `chunks` table filtered by `course_id`, returns top K rows with similarity score; uses `embedding <=>` pgvector operator
+- `server/src/lib/retrieval.js` — `retrieveChunks()` embeds the question via `embeddings.js` and calls the RPC; returns top 5 chunks with metadata
+- `server/src/lib/claude.js` — `generateResponse()` builds formatted context block from chunks, constructs messages array (context injection + last 10 history + current message), calls `claude-haiku-4-5-20251001`, logs interaction to `interactions` table (fire-and-forget), returns `{ response, sources[] }`
+- `server/src/routes/chat.js` — `POST /api/chat` wires retrieveChunks → generateResponse; handles missing message/sessionId and API error cases
+- Registered chat route in `server/src/index.js`
 
 **Decisions:**
-- 
+- System prompt copied verbatim from `PROMPTS.md` — all 7 constraints intact
+- Context injected as a synthetic first user/assistant exchange so Claude "sees" materials before history — avoids prompt injection from history and keeps context separate
+- Topic tagging done via keyword matching (not a Claude mini-call) — zero latency, zero cost; good enough for the demo's SPM domain
+- Interaction logging is fire-and-forget (`.then()`) so it never blocks the chat response
 
 **Problems:**
-- 
+- None — pipeline worked on first test
 
 **Next:**
-- 
+- ~~Commit and push Phase 2~~ ✅
+- Cut `feat/phase-3-frontend`, build FileUpload, ChatPanel, SourceCitation, useUpload, useChat
 
 ---
 
