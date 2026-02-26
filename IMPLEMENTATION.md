@@ -99,19 +99,31 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
-### [Date] — Phase 3: Frontend Core
+### 2026-02-26 — Phase 3: Frontend Core
 
 **Built:**
-- 
+- `client/src/hooks/useUpload.js` — `uploadFiles()` POSTs to `/api/upload`, manages `files`, `uploading`, `error` state
+- `client/src/hooks/useChat.js` — `sendMessage()` POSTs to `/api/chat`, manages `messages`, `loading`, stable `sessionId` via `useRef`; history capped to last 10 messages
+- `client/src/components/FileUpload.jsx` — drag-and-drop zone, file type + size validation, spinner during upload, ingested file list with color-coded sourceType badges and week labels
+- `client/src/components/SourceCitation.jsx` — deduped source chips ("Week 1 · Lecture"), click to expand excerpt tooltip
+- `client/src/components/ChatPanel.jsx` — full chat thread with user/assistant bubbles, typing indicator, auto-scroll, active materials bar, integrated textarea + send button
+- `client/src/App.jsx` — composes FileUpload + ChatPanel, manages shared `courseId` and `uploadedFiles` state
+- `react-markdown` added for proper markdown rendering in AI responses (bold, blockquotes, lists)
+- Full dark theme UI pass — consistent `#0f1117`/`#111827` color system, indigo accent, gradient avatars
 
 **Decisions:**
-- 
+- Inline styles used instead of Tailwind classes for component-level dark theme — avoids Tailwind v4 JIT purge issues with dynamic class names
+- `react-markdown` chosen over manual parsing — handles all Claude output formatting reliably
+- Source citations deduplicated by `sourceFile` before rendering — prevents showing the same file 5 times when all 5 retrieved chunks are from one document
+- `sessionId` generated in `useRef` (not `useState`) so it's stable across re-renders without triggering effects
 
 **Problems:**
-- 
+- Initial UI had raw markdown rendering (`**bold**` as literal text) — fixed by adding `react-markdown`
+- Tailwind dark mode classes inconsistent with browser's system dark theme — switched to explicit inline styles for all color values
 
 **Next:**
-- 
+- ~~Commit and push Phase 3~~ ✅
+- Cut `feat/phase-4-dashboard`, add hints tracking, session summary endpoint, WeakSpotDashboard component
 
 ---
 

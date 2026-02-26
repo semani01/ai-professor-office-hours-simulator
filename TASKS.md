@@ -101,36 +101,36 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 **Branch:** `feat/phase-3-frontend` (branch off `main` before starting)
 
-- [ ] `client/src/hooks/useUpload.js`:
-  - [ ] State: `files`, `uploading`, `error`
-  - [ ] `uploadFiles(fileList)` → POST to `/api/upload`, update state with ingested list
-- [ ] `client/src/hooks/useChat.js`:
-  - [ ] State: `messages`, `loading`, `sessionId` (generated with `crypto.randomUUID()` on mount)
-  - [ ] `sendMessage(text)` → POST to `/api/chat`, append response to messages
-  - [ ] Cap history to last 10 messages passed to API
-- [ ] `client/src/components/FileUpload.jsx`:
-  - [ ] Drag-and-drop zone with file type validation (PDF, PPTX, DOCX only)
-  - [ ] Upload progress indicator during `uploading` state
-  - [ ] Success state: list of ingested files with sourceType badge and week label
-  - [ ] Error state: friendly error message
-- [ ] `client/src/components/SourceCitation.jsx`:
-  - [ ] Props: `sources` array
-  - [ ] Render inline tags: "Week 4 · Lecture" with excerpt on hover/expand
-  - [ ] Subtle styling — not distracting
-- [ ] `client/src/components/ChatPanel.jsx`:
-  - [ ] Two-column layout: left sidebar (uploaded files) + right chat thread
-  - [ ] User bubbles (right-aligned) vs. tutor bubbles (left-aligned)
-  - [ ] `SourceCitation` below each AI message
-  - [ ] Input field + Send button (Enter key supported)
-  - [ ] Auto-scroll to latest message via `useEffect` + `ref`
-  - [ ] Loading indicator (typing dots) during API call
-  - [ ] Course context bar at top showing active materials
-- [ ] `client/src/App.jsx`:
-  - [ ] Compose `FileUpload` + `ChatPanel`
-  - [ ] Manage `courseId` state, pass to both components
-- [ ] Configure Vite proxy (or CORS) for local backend at `localhost:3001`
-- [ ] Commit and push to `feat/phase-3-frontend`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 3 log entry (what was built, decisions, problems)
+- [x] `client/src/hooks/useUpload.js`:
+  - [x] State: `files`, `uploading`, `error`
+  - [x] `uploadFiles(fileList)` → POST to `/api/upload`, update state with ingested list
+- [x] `client/src/hooks/useChat.js`:
+  - [x] State: `messages`, `loading`, `sessionId` (generated with `crypto.randomUUID()` on mount)
+  - [x] `sendMessage(text)` → POST to `/api/chat`, append response to messages
+  - [x] Cap history to last 10 messages passed to API
+- [x] `client/src/components/FileUpload.jsx`:
+  - [x] Drag-and-drop zone with file type validation (PDF, PPTX, DOCX only)
+  - [x] Upload progress indicator during `uploading` state
+  - [x] Success state: list of ingested files with sourceType badge and week label
+  - [x] Error state: friendly error message
+- [x] `client/src/components/SourceCitation.jsx`:
+  - [x] Props: `sources` array
+  - [x] Render inline tags: "Week 4 · Lecture" with excerpt on click/expand
+  - [x] Subtle styling — not distracting
+- [x] `client/src/components/ChatPanel.jsx`:
+  - [x] Two-column layout: left sidebar (uploaded files) + right chat thread
+  - [x] User bubbles (right-aligned) vs. tutor bubbles (left-aligned)
+  - [x] `SourceCitation` below each AI message
+  - [x] Input field + Send button (Enter key supported)
+  - [x] Auto-scroll to latest message via `useEffect` + `ref`
+  - [x] Loading indicator (typing dots) during API call
+  - [x] Course context bar at top showing active materials
+- [x] `client/src/App.jsx`:
+  - [x] Compose `FileUpload` + `ChatPanel`
+  - [x] Manage `courseId` state, pass to both components
+- [x] Configure Vite proxy (or CORS) for local backend at `localhost:3001`
+- [x] Commit and push to `feat/phase-3-frontend`; open PR into `main`; merge
+- [x] Update `IMPLEMENTATION.md` — Phase 3 log entry (what was built, decisions, problems)
 
 **Exit condition:** Upload SPM slides in browser → ask a question → receive Socratic response with inline source citation. No console errors. PR merged into `main`.
 
@@ -249,7 +249,7 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | 0 — Setup | ✅ Done |
 | 1 — Ingestion Pipeline | ✅ Done |
 | 2 — Retrieval + Claude | ✅ Done |
-| 3 — Frontend Core | ⬜ Not started |
+| 3 — Frontend Core | ✅ Done |
 | 4 — Weak Spot Dashboard | ⬜ Not started |
 | 5 — Polish | ⬜ Not started |
 | 6 — Deployment | ⬜ Not started |
