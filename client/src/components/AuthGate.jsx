@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
-export function AuthGate({ children }) {
-  const { session, loading, signIn, signUp } = useAuth();
+export function AuthGate({ children, session, loading }) {
+  const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

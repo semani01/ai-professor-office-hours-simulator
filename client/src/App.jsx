@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from './hooks/useAuth';
 import { AuthGate } from './components/AuthGate';
 import { CourseTabs } from './components/CourseTabs';
 import { FileUpload } from './components/FileUpload';
 import { ChatPanel } from './components/ChatPanel';
 import { WeakSpotDashboard } from './components/WeakSpotDashboard';
 import { FileViewerModal } from './components/FileViewerModal';
-import { useAuth } from './hooks/useAuth';
 
-function AppContent() {
-  const { session, signOut } = useAuth();
-  const token = session.access_token;
+function AppContent({ session, signOut }) {
+  const token = session?.access_token;
 
   const [courses, setCourses] = useState([]);
   const [activeCourseId, setActiveCourseId] = useState(null);
@@ -221,9 +220,10 @@ function AppContent() {
 }
 
 export default function App() {
+  const { session, loading, signOut } = useAuth();
   return (
-    <AuthGate>
-      <AppContent />
+    <AuthGate session={session} loading={loading}>
+      <AppContent session={session} signOut={signOut} />
     </AuthGate>
   );
 }
