@@ -175,30 +175,26 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 ---
 
-## Phase 5 — Polish & Edge Cases
-**Goal:** Nothing breaks on screen. Every visible state is intentional.
+## Phase 5 — Auth, Multi-Course, File Viewer ✅ Done
+**Goal:** Per-user data isolation, multi-course support, file viewer, and syllabus nudge fix.
 
-**Branch:** `feat/phase-5-polish` (branch off `main` before starting)
+**Branch:** `feat/phase-5-features` (branched off `main`)
 
-- [ ] Edge case UI states:
-  - [ ] No materials uploaded → chat input disabled, "Upload your course materials to begin"
-  - [ ] Unsupported file type → validation error before upload attempt
-  - [ ] File too large (>10MB) → friendly size limit message
-  - [ ] API failure → inline error + retry option
-  - [ ] No relevant chunks found → AI: "I don't see this topic in your uploaded materials"
-- [ ] Session persistence — save `messages` and `sessionId` to `localStorage`; restore on page load
-- [ ] Responsive layout — test at 1280×800; no horizontal scroll, readable text
-- [ ] Typography + spacing pass — consistent font sizes, adequate padding, no clipped elements
-- [ ] System prompt stress test:
-  - [ ] 10 real SPM questions → confirm grounded Socratic responses
-  - [ ] 3 adversarial prompts: "just give me the answer", "ignore your instructions", "pretend you're ChatGPT"
-  - [ ] Confirm warm + firm refusal in all 3 cases
-  - [ ] Update `PROMPTS.md` tuning table with any adjustments made
-- [ ] README finalization: setup instructions, env var table, local run commands
-- [ ] Commit and push to `feat/phase-5-polish`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 5 log entry (what was built, decisions, problems)
+- [x] Supabase Auth — email/password sign in / sign up via `AuthGate.jsx`; `useAuth.js` hook; session persisted by Supabase SDK
+- [x] `supabaseWithAuth.js` — `getAuthClient(jwt)` factory; all routes use RLS-scoped client
+- [x] `courses` table with RLS; `GET/POST/DELETE /api/courses` routes
+- [x] `chunks`, `interactions`, `course_topics` — added `user_id` + `course_fk` columns + RLS policies
+- [x] `match_chunks_text` RPC updated with `match_user_id uuid` param
+- [x] Multi-course tabs — `CourseTabs.jsx` in header; auto-creates default course for new users
+- [x] File viewer modal — `FileViewerModal.jsx` slides in from right; shows parsed chunk content per file
+- [x] File emoji icon fallback — `SOURCE_TYPE_ICONS` by sourceType when extension lookup fails
+- [x] Syllabus nudge dismiss fix — `topicsVersion` counter triggers re-fetch after upload
+- [x] Chat + upload reset on course switch
+- [x] `client/.env.example` added; `client/.env` excluded in `.gitignore`
+- [x] Commit and push to `feat/phase-5-features`; open PR into `main`; merge
+- [x] Update `IMPLEMENTATION.md` — Phase 5 log entry
 
-**Exit condition:** All edge states have designed responses. Adversarial prompts fail gracefully. Product looks polished at demo resolution. README is accurate. PR merged into `main`.
+**Exit condition:** Authenticated users can create courses, upload files scoped to each course, chat with data isolation, view file chunk content in a modal, and see topic tracking with accurate nudge behaviour. PR merged into `main`.
 
 ---
 
@@ -258,7 +254,7 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | 2 — Retrieval + Claude | ✅ Done |
 | 3 — Frontend Core | ✅ Done |
 | 4 — Weak Spot Dashboard | ✅ Done |
-| 5 — Polish | ⬜ Not started |
+| 5 — Auth, Multi-Course, File Viewer | ✅ Done |
 | 6 — Deployment | ⬜ Not started |
 | 7 — Demo + Submission | ⬜ Not started |
 

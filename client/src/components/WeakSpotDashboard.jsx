@@ -77,25 +77,28 @@ function TopicCard({ topic }) {
   );
 }
 
-export function WeakSpotDashboard({ sessionId, courseId }) {
+export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion }) {
   const [topics, setTopics] = useState([]);
-  const [hasCourseTopic, setHasCourseTopic] = useState(null); // null = loading, true/false = known
+  const [hasCourseTopic, setHasCourseTopic] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Check if a syllabus has been uploaded for this course
+  // Check if a syllabus has been uploaded — re-runs when courseId or topicsVersion changes
   useEffect(() => {
-    if (!courseId) return;
-    fetch(`/api/topics/${courseId}`)
+    if (!courseId || !token) return;
+    setHasCourseTopic(null);
+    fetch(`/api/topics/${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => setHasCourseTopic(data.topics?.length > 0))
       .catch(() => setHasCourseTopic(false));
-  }, [courseId]);
+  }, [courseId, token, topicsVersion]);
 
   async function fetchSummary() {
-    if (!sessionId) return;
+    if (!sessionId || !token) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/session/${sessionId}/summary`);
+      const res = await fetch(`/api/session/${sessionId}/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (data.topics) setTopics(data.topics);
     } catch {
@@ -110,7 +113,7 @@ export function WeakSpotDashboard({ sessionId, courseId }) {
     fetchSummary();
     const interval = setInterval(fetchSummary, 30_000);
     return () => clearInterval(interval);
-  }, [sessionId]);
+  }, [sessionId, token]);
 
   const demonstrated = topics.filter((t) => getTier(t) === 'green');
   const needsReview = topics.filter((t) => getTier(t) === 'yellow');

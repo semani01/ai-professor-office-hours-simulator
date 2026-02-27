@@ -24,12 +24,17 @@ function TypingDots() {
   );
 }
 
-export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId }) {
-  const { messages, loading, error, sendMessage, sessionId } = useChat(courseId);
+export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef }) {
+  const { messages, loading, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token);
 
   const [input, setInput] = useState('');
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Expose resetMessages to parent via ref so course switching can clear the chat
+  useEffect(() => {
+    if (onResetRef) onResetRef.current = resetMessages;
+  }, [resetMessages]);
 
   // Bubble sessionId up to App once on mount so the dashboard can use it
   useEffect(() => {

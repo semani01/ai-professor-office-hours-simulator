@@ -1,5 +1,5 @@
 const express = require('express');
-const supabase = require('../db/supabase');
+const { getAuthClient, extractJwt } = require('../db/supabaseWithAuth');
 
 const router = express.Router();
 
@@ -11,10 +11,14 @@ const router = express.Router();
 router.get('/topics/:courseId', async (req, res) => {
   const { courseId } = req.params;
 
-  const { data, error } = await supabase
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const db = getAuthClient(jwt);
+  const { data, error } = await db
     .from('course_topics')
     .select('topic')
-    .eq('course_id', courseId)
+    .eq('course_fk', courseId)
     .order('position', { ascending: true });
 
   if (error) {

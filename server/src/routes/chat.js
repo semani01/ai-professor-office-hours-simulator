@@ -1,6 +1,7 @@
 const express = require('express');
 const { retrieveChunks } = require('../lib/retrieval');
 const { generateResponse } = require('../lib/claude');
+const { extractJwt, getUserId } = require('../db/supabaseWithAuth');
 
 const router = express.Router();
 
@@ -20,19 +21,24 @@ router.post('/chat', async (req, res) => {
     return res.status(400).json({ error: 'sessionId is required.' });
   }
 
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const userId = await getUserId(jwt);
+  if (!userId) return res.status(401).json({ error: 'Could not identify user' });
+
   const course = courseId || 'default';
   try {
-    // 1. Retrieve relevant chunks
-    const chunks = await retrieveChunks(message, course);
+    // 1. Retrieve relevant chunks (scoped to user)
+    const chunks = await retrieveChunks(message, course, userId, jwt);
 
     // 2. Generate Socratic response
-    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId);
+    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt);
 
     return res.json({ response, sources });
   } catch (err) {
     console.error('Chat error:', err.message);
 
-    // Surface a friendly message for known failure modes
     if (err.message.includes('Retrieval failed')) {
       return res.status(500).json({ error: 'Could not search your course materials. Please try again.' });
     }

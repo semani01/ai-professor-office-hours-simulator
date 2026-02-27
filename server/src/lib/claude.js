@@ -1,5 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const supabase = require('../db/supabase');
+const { getAuthClient } = require('../db/supabaseWithAuth');
 
 const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
 
@@ -96,23 +96,20 @@ function topicMatchScore(question, topic) {
 /**
  * Infer a topic tag from the question by matching against course topics stored in Supabase.
  * Falls back to 'General' if no topics are loaded or nothing matches.
- *
- * @param {string} question
- * @param {string} courseId
- * @returns {Promise<string>}
  */
-async function inferTopicTag(question, courseId) {
-  const { data, error } = await supabase
+async function inferTopicTag(question, courseId, userId, jwt) {
+  const db = getAuthClient(jwt);
+  const { data, error } = await db
     .from('course_topics')
     .select('topic')
-    .eq('course_id', courseId)
+    .eq('course_fk', courseId)
+    .eq('user_id', userId)
     .order('position', { ascending: true });
 
   if (error || !data || data.length === 0) return 'General';
 
   const topics = data.map((r) => r.topic);
 
-  // Find the topic with the highest word-overlap score
   let bestTopic = null;
   let bestScore = 0;
   for (const topic of topics) {
@@ -123,13 +120,11 @@ async function inferTopicTag(question, courseId) {
     }
   }
 
-  // Require at least one meaningful word match (score > 0)
   return bestScore > 0 ? bestTopic : 'General';
 }
 
 /**
  * Detect if the student's message indicates they have understood / resolved the topic.
- * Simple keyword heuristic — avoids an extra API call.
  */
 function isResolved(message) {
   const m = message.toLowerCase();
@@ -151,12 +146,14 @@ function isResolved(message) {
  * Count how many prior exchanges on this topic exist for this session.
  * Returns 0 on error (non-blocking).
  */
-async function countPriorExchanges(sessionId, topicTag) {
-  const { data, error } = await supabase
+async function countPriorExchanges(sessionId, topicTag, userId, jwt) {
+  const db = getAuthClient(jwt);
+  const { data, error } = await db
     .from('interactions')
     .select('id', { count: 'exact' })
     .eq('session_id', sessionId)
-    .eq('topic_tag', topicTag);
+    .eq('topic_tag', topicTag)
+    .eq('user_id', userId);
   if (error) return 0;
   return data ? data.length : 0;
 }
@@ -166,20 +163,20 @@ async function countPriorExchanges(sessionId, topicTag) {
  *
  * @param {string} message - current student message
  * @param {{ role: string, content: string }[]} history - prior messages (max last 10)
- * @param {{ content, source_file, source_type, week_number }[]} chunks - retrieved course chunks
+ * @param {{ content, source_file, source_type, week_number, course_fk }[]} chunks - retrieved course chunks
  * @param {string} sessionId - session identifier for logging
+ * @param {string} userId - authenticated user ID
+ * @param {string} jwt - Supabase access token
  * @returns {Promise<{ response: string, sources: { sourceFile, sourceType, weekNumber, excerpt }[] }>}
  */
-async function generateResponse(message, history, chunks, sessionId) {
+async function generateResponse(message, history, chunks, sessionId, userId, jwt) {
   const contextBlock = formatChunks(chunks);
 
-  // Cap history to last 10 messages; strip extra fields (e.g. sources) the Claude API doesn't accept
   const recentHistory = (history || [])
     .slice(-10)
     .map(({ role, content }) => ({ role, content }));
 
   const messages = [
-    // Inject context as first exchange so Claude "sees" the materials
     {
       role: 'user',
       content: `Here are the most relevant sections from the student's course materials for this question:\n\n${contextBlock}`,
@@ -201,7 +198,6 @@ async function generateResponse(message, history, chunks, sessionId) {
 
   const responseText = apiResponse.content[0].text;
 
-  // Build sources array from retrieved chunks
   const sources = (chunks || []).map((c) => ({
     sourceFile: c.source_file,
     sourceType: c.source_type,
@@ -211,17 +207,20 @@ async function generateResponse(message, history, chunks, sessionId) {
 
   // Log interaction with hints tracking (fire-and-forget)
   const resolved = isResolved(message);
+  const courseId = chunks[0]?.course_fk || null;
 
-  inferTopicTag(message, chunks[0]?.course_id || 'default').then((topicTag) => {
-    countPriorExchanges(sessionId, topicTag).then((prior) => {
-      supabase
-        .from('interactions')
+  inferTopicTag(message, courseId, userId, jwt).then((topicTag) => {
+    countPriorExchanges(sessionId, topicTag, userId, jwt).then((prior) => {
+      const db = getAuthClient(jwt);
+      db.from('interactions')
         .insert({
           session_id: sessionId,
           topic_tag: topicTag,
           question: message,
           hints_needed: prior,
           resolved,
+          user_id: userId,
+          course_fk: courseId,
         })
         .then(({ error }) => {
           if (error) console.error('Failed to log interaction:', error.message);
