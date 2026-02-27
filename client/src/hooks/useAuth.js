@@ -16,9 +16,13 @@ export function useAuth() {
       setLoading(false);
     });
 
-    // Subscribe to auth state changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Subscribe to auth state changes (login, logout, token refresh, email confirmation)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      // Ensure loading is cleared for all event types (e.g. email confirmation redirect)
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();

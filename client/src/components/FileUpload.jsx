@@ -54,14 +54,24 @@ export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
   async function handleFiles(fileList) {
     setValidationError(null);
     const err = validateFiles(Array.from(fileList));
-    if (err) { setValidationError(err); return; }
+    if (err) {
+      setValidationError(err);
+      // Auto-dismiss validation error after 5 seconds
+      setTimeout(() => setValidationError(null), 5000);
+      return;
+    }
+    // Capture courseId now — activeCourseId in parent may change before upload completes
+    const uploadedForCourse = courseId;
     const result = await uploadFiles(fileList, courseId, token);
-    if (result?.ingested?.length > 0 && onFilesIngested) onFilesIngested(result.ingested);
+    // Reset the file input so the same file can be re-uploaded
+    if (inputRef.current) inputRef.current.value = '';
+    if (result?.ingested?.length > 0 && onFilesIngested) onFilesIngested(result.ingested, uploadedForCourse);
   }
 
   function onDrop(e) {
     e.preventDefault();
     setDragOver(false);
+    if (uploading) return;
     if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
   }
 

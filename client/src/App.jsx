@@ -12,6 +12,7 @@ function AppContent({ session, signOut }) {
 
   const [courses, setCourses] = useState([]);
   const [activeCourseId, setActiveCourseId] = useState(null);
+  const [coursesError, setCoursesError] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [topicsVersion, setTopicsVersion] = useState(0);
@@ -21,7 +22,8 @@ function AppContent({ session, signOut }) {
   const resetMessagesRef = useRef(null);
 
   // Load courses on mount
-  useEffect(() => {
+  function loadCourses() {
+    setCoursesError(false);
     fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(async (data) => {
@@ -39,8 +41,10 @@ function AppContent({ session, signOut }) {
         setCourses(list);
         setActiveCourseId(list[0]?.id ?? null);
       })
-      .catch(console.error);
-  }, [token]);
+      .catch(() => setCoursesError(true));
+  }
+
+  useEffect(() => { loadCourses(); }, [token]);
 
   // When active course changes, reset files + session
   useEffect(() => {
@@ -50,7 +54,9 @@ function AppContent({ session, signOut }) {
     resetMessagesRef.current?.();
   }, [activeCourseId]);
 
-  function handleFilesIngested(newFiles) {
+  function handleFilesIngested(newFiles, forCourseId) {
+    // Ignore stale callbacks from uploads that started on a different course
+    if (forCourseId && forCourseId !== activeCourseId) return;
     setUploadedFiles((prev) => [...prev, ...newFiles]);
     // If a syllabus was ingested, bump topicsVersion so the dashboard re-fetches
     if (newFiles.some((f) => f.sourceType === 'syllabus')) {
@@ -165,7 +171,25 @@ function AppContent({ session, signOut }) {
             </div>
           </div>
           <div style={{ overflowY: 'auto', padding: 16, flex: 1 }}>
-            {activeCourseId ? (
+            {coursesError ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, paddingTop: 24 }}>
+                <div style={{ fontSize: 12, color: '#f87171', textAlign: 'center' }}>
+                  Failed to load courses.
+                </div>
+                <button
+                  onClick={loadCourses}
+                  style={{
+                    fontSize: 11, padding: '5px 14px', borderRadius: 8,
+                    background: 'none', border: '1px solid #334155',
+                    color: '#94a3b8', cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#6366f1'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = '#334155'}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : activeCourseId ? (
               <FileUpload
                 courseId={activeCourseId}
                 onFilesIngested={handleFilesIngested}

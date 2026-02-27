@@ -45,9 +45,11 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  const hasCourse = !!courseId;
+
   function handleSend() {
     const text = input.trim();
-    if (!text || loading || !hasUploads) return;
+    if (!text || loading || !hasUploads || !hasCourse) return;
     setInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -135,8 +137,11 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
                 fontSize: 14, lineHeight: 1.6,
                 ...(msg.role === 'user'
                   ? {
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                      color: '#fff',
+                      background: msg.failed
+                        ? 'transparent'
+                        : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      color: msg.failed ? '#f87171' : '#fff',
+                      border: msg.failed ? '1px solid #7f1d1d' : 'none',
                     }
                   : {
                       background: '#111827',
@@ -152,6 +157,21 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
                   msg.content
                 )}
               </div>
+              {/* Retry button for failed user messages */}
+              {msg.failed && (
+                <button
+                  onClick={() => sendMessage(msg.content)}
+                  style={{
+                    marginTop: 4, fontSize: 11, padding: '3px 10px', borderRadius: 8,
+                    background: 'none', border: '1px solid #7f1d1d',
+                    color: '#f87171', cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#450a0a'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                >
+                  ↩ Retry
+                </button>
+              )}
               {msg.role === 'assistant' && msg.sources?.length > 0 && (
                 <SourceCitation sources={msg.sources} />
               )}
@@ -201,14 +221,18 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={!hasUploads || loading}
-            placeholder={hasUploads ? 'Ask a question about your course...' : 'Upload materials to begin'}
+            disabled={!hasCourse || !hasUploads || loading}
+            placeholder={
+              !hasCourse ? 'Create a course to start chatting' :
+              hasUploads ? 'Ask a question about your course...' :
+              'Upload materials to begin'
+            }
             rows={1}
             style={{
               flex: 1, resize: 'none', border: 'none', outline: 'none',
               background: 'transparent', color: '#e2e8f0', fontSize: 14, lineHeight: 1.5,
               maxHeight: 120, fontFamily: 'inherit',
-              cursor: !hasUploads ? 'not-allowed' : 'text',
+              cursor: !hasCourse || !hasUploads ? 'not-allowed' : 'text',
             }}
             onInput={(e) => {
               e.target.style.height = 'auto';
@@ -217,14 +241,14 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
           />
           <button
             onClick={handleSend}
-            disabled={!hasUploads || loading || !input.trim()}
+            disabled={!hasCourse || !hasUploads || loading || !input.trim()}
             style={{
               width: 36, height: 36, borderRadius: 10, border: 'none',
-              background: !hasUploads || loading || !input.trim()
+              background: !hasCourse || !hasUploads || loading || !input.trim()
                 ? '#1e293b'
                 : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: !hasUploads || loading || !input.trim() ? '#475569' : '#fff',
-              cursor: !hasUploads || loading || !input.trim() ? 'not-allowed' : 'pointer',
+              color: !hasCourse || !hasUploads || loading || !input.trim() ? '#475569' : '#fff',
+              cursor: !hasCourse || !hasUploads || loading || !input.trim() ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 16, flexShrink: 0,
               transition: 'all 0.15s',

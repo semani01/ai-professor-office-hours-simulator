@@ -119,6 +119,20 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
   const needsReview = topics.filter((t) => getTier(t) === 'yellow');
   const revisit = topics.filter((t) => getTier(t) === 'red');
 
+  // Skeleton while checking for syllabus
+  if (hasCourseTopic === null) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '2px 0' }}>
+        {[80, 55, 70].map((w, i) => (
+          <div key={i} style={{
+            height: 12, borderRadius: 6,
+            background: '#1e293b', width: `${w}%`, opacity: 0.5,
+          }} />
+        ))}
+      </div>
+    );
+  }
+
   // Syllabus nudge — shown when no topics have been extracted yet
   if (hasCourseTopic === false) {
     return (

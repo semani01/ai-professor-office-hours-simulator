@@ -34,7 +34,10 @@ export function useChat(courseId, token) {
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       setError(err.message);
-      setMessages((prev) => prev.slice(0, -1));
+      // Keep the user message visible with a failed flag so they can retry
+      setMessages((prev) => prev.map((m, i) =>
+        i === prev.length - 1 && m.role === 'user' ? { ...m, failed: true } : m
+      ));
     } finally {
       setLoading(false);
     }
