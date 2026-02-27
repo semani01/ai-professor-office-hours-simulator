@@ -181,19 +181,30 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
-### [Date] — Phase 5: Auth, Multi-Course, File Viewer
+### 2026-02-26 — Phase 5: Auth, Multi-Course, File Viewer
 
 **Built:**
-- 
+- Full Supabase email/password auth — `useAuth.js` hook + `AuthGate.jsx` login/signup screen; session persisted automatically by Supabase SDK
+- `supabaseWithAuth.js` server factory — `getAuthClient(jwt)` creates an RLS-scoped Supabase client from the user's JWT; `extractJwt()` and `getUserId()` helpers used in every route
+- `courses` table with RLS + `GET/POST/DELETE /api/courses` routes; all existing tables (`chunks`, `interactions`, `course_topics`) extended with `user_id uuid` and `course_fk uuid` columns and RLS policies
+- `match_chunks_text` RPC updated to accept `match_user_id uuid` parameter — eliminates cross-user chunk contamination
+- Multi-course header tabs — `CourseTabs.jsx` with active indigo indicator, `×` per-tab delete, inline `+` input to create new course; auto-creates "My Course" for new users with no courses
+- File viewer modal — `FileViewerModal.jsx` slides in from right (CSS `transform` transition); fetches parsed chunk text from `GET /api/files/:courseId/chunks?sourceFile=...`; closes on Escape, backdrop click, or × button
+- File emoji icon fallback — `SOURCE_TYPE_ICONS` map by `sourceType` used when extension lookup fails
+- Syllabus nudge dismiss fix — `topicsVersion` counter in `App.jsx` increments on syllabus upload; `WeakSpotDashboard` adds it to dependency array so nudge clears immediately after upload
+- Chat and upload reset on course switch — `resetMessagesRef` pattern lets `App.jsx` call `useChat.resetMessages()` when `activeCourseId` changes
 
 **Decisions:**
-- 
+- JWT forwarded as `Authorization: Bearer` header on every client→server request; server never stores tokens
+- `getAuthClient(jwt)` pattern (not middleware) keeps route logic explicit and makes RLS violations surface as empty results (not 401s)
+- Course UUID used as `course_fk` everywhere — replaces the old hard-coded `course_id='default'` string, fixing stale cross-session chunk contamination
+- `useRef` + callback pattern for chat reset (instead of key remounting) to avoid unmount flash
 
 **Problems:**
-- 
+- ESLint "declared but never used" warnings surfaced several prop/state wiring gaps in `FileUpload.jsx` (token, onFileClick, hoveredIdx) and `index.js` (route registrations) — caught and fixed before commit
 
 **Next:**
-- 
+- Phase 6 — Deployment (Vercel + Render)
 
 ---
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const supabase = require('../db/supabase');
+const { getAuthClient, extractJwt } = require('../db/supabaseWithAuth');
 
 const router = express.Router();
 
@@ -18,7 +18,11 @@ router.get('/session/:sessionId/summary', async (req, res) => {
     return res.status(400).json({ error: 'sessionId is required' });
   }
 
-  const { data, error } = await supabase
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const db = getAuthClient(jwt);
+  const { data, error } = await db
     .from('interactions')
     .select('topic_tag, hints_needed, resolved')
     .eq('session_id', sessionId)
@@ -41,7 +45,6 @@ router.get('/session/:sessionId/summary', async (req, res) => {
       topicMap[tag] = { tag, hintsNeeded: 0, resolved: false, exchanges: 0 };
     }
     topicMap[tag].exchanges += 1;
-    // hints_needed = index of this exchange within the topic, so max reflects depth
     if (row.hints_needed > topicMap[tag].hintsNeeded) {
       topicMap[tag].hintsNeeded = row.hints_needed;
     }

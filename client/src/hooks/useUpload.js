@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
 export function useUpload() {
-  const [files, setFiles] = useState([]);      // ingested file list returned by server
+  const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
 
-  async function uploadFiles(fileList, courseId) {
+  async function uploadFiles(fileList, courseId, token) {
     setUploading(true);
     setError(null);
 
@@ -14,7 +14,11 @@ export function useUpload() {
     if (courseId) formData.append('courseId', courseId);
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Upload failed');
@@ -32,5 +36,10 @@ export function useUpload() {
     }
   }
 
-  return { files, uploading, error, uploadFiles };
+  function resetFiles() {
+    setFiles([]);
+    setError(null);
+  }
+
+  return { files, uploading, error, uploadFiles, resetFiles };
 }

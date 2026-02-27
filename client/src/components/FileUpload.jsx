@@ -23,10 +23,19 @@ const FILE_ICONS = {
   pptx: '📙',
 };
 
-export function FileUpload({ courseId, onFilesIngested }) {
+const SOURCE_TYPE_ICONS = {
+  lecture:    '📙',
+  notes:      '📗',
+  assignment: '📒',
+  syllabus:   '📋',
+  material:   '📄',
+};
+
+export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
   const { files, uploading, error, uploadFiles } = useUpload();
   const [dragOver, setDragOver] = useState(false);
   const [validationError, setValidationError] = useState(null);
+  const [hoveredIdx, setHoveredIdx] = useState(null);
   const inputRef = useRef(null);
 
   function validateFiles(fileList) {
@@ -46,7 +55,7 @@ export function FileUpload({ courseId, onFilesIngested }) {
     setValidationError(null);
     const err = validateFiles(Array.from(fileList));
     if (err) { setValidationError(err); return; }
-    const result = await uploadFiles(fileList, courseId);
+    const result = await uploadFiles(fileList, courseId, token);
     if (result?.ingested?.length > 0 && onFilesIngested) onFilesIngested(result.ingested);
   }
 
@@ -129,17 +138,27 @@ export function FileUpload({ courseId, onFilesIngested }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {files.map((f, i) => {
             const ext = f.fileName.split('.').pop().toLowerCase();
-            const icon = FILE_ICONS[ext] || '📄';
+            const icon = FILE_ICONS[ext] || SOURCE_TYPE_ICONS[f.sourceType] || '📄';
             const colors = SOURCE_TYPE_COLORS[f.sourceType] || SOURCE_TYPE_COLORS.material;
+            const isHovered = hoveredIdx === i;
             return (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 10px', borderRadius: 8,
-                background: '#111827', border: '1px solid #1e293b',
-              }}>
+              <div
+                key={i}
+                onClick={() => onFileClick && onFileClick(f)}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', borderRadius: 8,
+                  background: isHovered ? '#1a2035' : '#111827',
+                  border: `1px solid ${isHovered ? '#334155' : '#1e293b'}`,
+                  cursor: onFileClick ? 'pointer' : 'default',
+                  transition: 'all 0.12s',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-                  <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ fontSize: 11, color: isHovered ? '#cbd5e1' : '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.12s' }}>
                     {f.fileName.length > 28 ? f.fileName.slice(0, 25) + '...' : f.fileName}
                   </span>
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 
-export function useChat(courseId) {
+export function useChat(courseId, token) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,13 +15,15 @@ export function useChat(courseId) {
     setLoading(true);
     setError(null);
 
-    // Cap history to last 10 messages for the API call
     const history = messages.slice(-10);
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ message: text, history, sessionId, courseId }),
       });
       const data = await res.json();
@@ -32,12 +34,16 @@ export function useChat(courseId) {
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       setError(err.message);
-      // Remove the user message that failed so the UI is consistent
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);
     }
   }
 
-  return { messages, loading, error, sendMessage, sessionId };
+  function resetMessages() {
+    setMessages([]);
+    setError(null);
+  }
+
+  return { messages, loading, error, sendMessage, sessionId, resetMessages };
 }
