@@ -141,26 +141,26 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 **Branch:** `feat/phase-4-dashboard` (branch off `main` before starting)
 
-- [ ] Add topic tagging to `claude.js`:
-  - [ ] Keyword-match question against hardcoded SPM topic list (from syllabus) — or lightweight Claude mini-call
-  - [ ] Store `topic_tag` in `interactions` table insert
-- [ ] Add hints tracking:
-  - [ ] Count prior exchanges per topic in `interactions` for this session
-  - [ ] Increment `hints_needed` on follow-up questions to same topic
-  - [ ] Set `resolved = true` when student reaches correct answer (Claude confirms)
-- [ ] `GET /api/session/:sessionId/summary` endpoint:
-  - [ ] Query `interactions` grouped by `topic_tag` for this session
-  - [ ] Return `{ topics: [{ tag, hintsNeeded, resolved }] }`
-- [ ] `client/src/components/WeakSpotDashboard.jsx`:
-  - [ ] Fetch from `/api/session/:sessionId/summary`
-  - [ ] Render topic cards in a grid, color-coded:
+- [x] Add topic tagging to `claude.js`:
+  - [x] Keyword-match question against hardcoded SPM topic list (from syllabus) — or lightweight Claude mini-call
+  - [x] Store `topic_tag` in `interactions` table insert
+- [x] Add hints tracking:
+  - [x] Count prior exchanges per topic in `interactions` for this session
+  - [x] Increment `hints_needed` on follow-up questions to same topic
+  - [x] Set `resolved = true` when student reaches correct answer (Claude confirms)
+- [x] `GET /api/session/:sessionId/summary` endpoint:
+  - [x] Query `interactions` grouped by `topic_tag` for this session
+  - [x] Return `{ topics: [{ tag, hintsNeeded, resolved }] }`
+- [x] `client/src/components/WeakSpotDashboard.jsx`:
+  - [x] Fetch from `/api/session/:sessionId/summary`
+  - [x] Render topic cards in a grid, color-coded:
     - Green: resolved + `hintsNeeded` ≤ 1
     - Yellow: `hintsNeeded` 2–3
     - Red: `hintsNeeded` ≥ 4 or unresolved
-  - [ ] Session summary below cards: "Demonstrated" list + "To Revisit" list
-  - [ ] Footer note: "When to stop studying is your decision."
-  - [ ] Poll every 30s or refresh after each chat response
-- [ ] Wire `WeakSpotDashboard` into `App.jsx` with `sessionId` prop
+  - [x] Session summary below cards: "Demonstrated" list + "To Revisit" list
+  - [x] Footer note: "When to stop studying is your decision."
+  - [x] Poll every 30s or refresh after each chat response
+- [x] Wire `WeakSpotDashboard` into `App.jsx` with `sessionId` prop
 - [ ] Commit and push to `feat/phase-4-dashboard`; open PR into `main`; merge
 - [ ] Update `IMPLEMENTATION.md` — Phase 4 log entry (what was built, decisions, problems)
 
@@ -250,7 +250,7 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | 1 — Ingestion Pipeline | ✅ Done |
 | 2 — Retrieval + Claude | ✅ Done |
 | 3 — Frontend Core | ✅ Done |
-| 4 — Weak Spot Dashboard | ⬜ Not started |
+| 4 — Weak Spot Dashboard | ✅ Done |
 | 5 — Polish | ⬜ Not started |
 | 6 — Deployment | ⬜ Not started |
 | 7 — Demo + Submission | ⬜ Not started |

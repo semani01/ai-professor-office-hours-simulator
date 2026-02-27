@@ -127,19 +127,36 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
-### [Date] — Phase 4: Session Tracking & Weak Spot Dashboard
+### 2026-02-26 — Phase 4: Session Tracking & Weak Spot Dashboard
 
 **Built:**
-- 
+- `server/src/lib/claude.js` updated — `inferTopicTag()` keyword-matches question against SPM domain terms (scheduling, risk, stakeholders, agile, etc.); `isResolved()` heuristic detects student acknowledgement phrases; `countPriorExchanges()` queries `interactions` table to determine `hints_needed` for the current exchange; history messages stripped to `{ role, content }` before sending to Claude API
+- `server/src/routes/session.js` — `GET /api/session/:sessionId/summary` aggregates `interactions` rows by `topic_tag`, computing max `hints_needed`, total exchanges, and resolved status per topic; returns `{ topics[] }`
+- Registered session route in `server/src/index.js`
+- `client/src/components/WeakSpotDashboard.jsx` — topic cards color-coded green (resolved, ≤1 hint) / yellow (2–3 hints) / red (≥4 hints or unresolved with ≥2 exchanges); "Demonstrated" and "To Revisit" summary lists; "When to stop studying is your decision." footer; polls session summary every 30s and after each chat response
+- `client/src/components/ChatPanel.jsx` updated — added `onSessionId` prop, bubbles `sessionId` up to App via `useEffect` on mount
+- `client/src/App.jsx` updated — `sessionId` state added; `WeakSpotDashboard` rendered in sidebar below uploaded files list; `onSessionId` wired to `ChatPanel`
+- `server/src/lib/retrieval.js` updated — switched from `match_chunks` to `match_chunks_text` RPC; serializes embedding as string `[x,y,z,...]` for Postgres text cast
+- Supabase: dropped IVFFlat index, created HNSW index; created `match_chunks_text` function (accepts `text`, casts to `vector(384)` internally, `SECURITY DEFINER`, `SET LOCAL hnsw.ef_search = 100`)
 
 **Decisions:**
-- 
+- `isResolved()` uses keyword matching (no Claude mini-call) — zero latency, zero cost; the demo's SPM sessions produce clear resolution phrases
+- `hints_needed` stored on each interaction row as a point-in-time count of prior exchanges, not as a mutable running counter — simpler schema, correct aggregation in summary endpoint
+- Session summary aggregation done server-side in the route (not in SQL GROUP BY) — easier to reason about max/resolved logic in JS with the small row counts expected
+- `WeakSpotDashboard` polls every 30s rather than WebSocket — adequate for a single-user demo, much simpler implementation
+- HNSW index chosen over IVFFlat: IVFFlat requires training on existing data at creation time; an empty-table IVFFlat produces broken clusters (all identical similarities ~0.44). HNSW builds incrementally and works correctly on small datasets
 
 **Problems:**
-- 
+- **Claude API 400: `messages.3.sources: Extra inputs are not permitted`** — assistant messages stored in frontend state carried a `sources` field (UI metadata). Sending history directly to Claude API caused validation failure. Fix: `.map(({ role, content }) => ({ role, content }))` before building the messages array.
+- **Retrieval returning 0 chunks** — root cause was multi-layered:
+  1. IVFFlat index was built on an empty `chunks` table, so all similarity scores were identical (~0.443) and some queries returned 0 results
+  2. Supabase JS client serializes a JS number array as JSON when passed to an RPC `vector` parameter — Postgres cannot cast this to `vector`, silently returns no rows
+  - Fix: (1) dropped IVFFlat, created HNSW; (2) switched RPC to accept `text`, cast `::vector(384)` inside SQL; (3) added `SECURITY DEFINER` and `SET LOCAL hnsw.ef_search = 100` to prevent result pruning
+- Debugging required: adding logging at each layer (chat route, retrieval lib, direct table query, raw RPC result) to isolate which layer was failing
 
 **Next:**
-- 
+- ~~Commit and push Phase 4~~ ✅
+- Cut `feat/phase-5-polish`, handle edge case UI states, session persistence, responsive layout, adversarial prompt testing, README finalization
 
 ---
 

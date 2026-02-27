@@ -14,14 +14,21 @@ async function retrieveChunks(question, courseId, topK = 5) {
   const [embedded] = await embedChunks([{ content: question, metadata: {} }]);
   const queryEmbedding = embedded.embedding;
 
-  const { data, error } = await supabase.rpc('match_chunks', {
-    query_embedding: queryEmbedding,
+  // Serialize as pgvector string format — Supabase JS client requires this for vector RPC params
+  const embeddingString = `[${queryEmbedding.join(',')}]`;
+
+  const { data, error } = await supabase.rpc('match_chunks_text', {
+    query_embedding_text: embeddingString,
     match_course_id: courseId,
     match_count: topK,
   });
 
-  if (error) throw new Error(`Retrieval failed: ${error.message}`);
+  if (error) {
+    console.error('[retrieval] RPC error:', JSON.stringify(error));
+    throw new Error(`Retrieval failed: ${error.message}`);
+  }
 
+  console.log(`[retrieval] got ${data?.length ?? 0} chunks`, data?.length ? `(top similarity: ${data[0].similarity?.toFixed(3)})` : '');
   return data || [];
 }
 

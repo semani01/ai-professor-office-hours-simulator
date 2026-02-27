@@ -96,6 +96,7 @@ router.post('/upload', upload.array('files[]'), async (req, res) => {
       const { error: insertError } = await supabase.from('chunks').insert(rows);
       if (insertError) throw new Error(`Supabase insert failed: ${insertError.message}`);
 
+      console.log(`[upload] ingested "${fileName}" — ${rows.length} chunks, sourceType="${sourceType}", week=${weekNumber}`);
       ingested.push({ fileName, sourceType, chunkCount: rows.length });
     } catch (err) {
       errors.push({ fileName: file.originalname, error: err.message });

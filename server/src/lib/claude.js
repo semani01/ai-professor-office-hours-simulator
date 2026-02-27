@@ -102,6 +102,40 @@ function inferTopicTag(question) {
 }
 
 /**
+ * Detect if the student's message indicates they have understood / resolved the topic.
+ * Simple keyword heuristic — avoids an extra API call.
+ */
+function isResolved(message) {
+  const m = message.toLowerCase();
+  return (
+    m.includes('i understand') ||
+    m.includes('i get it') ||
+    m.includes('that makes sense') ||
+    m.includes('got it') ||
+    m.includes('makes sense now') ||
+    m.includes('i see now') ||
+    m.includes('i think i understand') ||
+    m.includes('ahh') ||
+    m.includes('ah i see') ||
+    m.includes('oh i see')
+  );
+}
+
+/**
+ * Count how many prior exchanges on this topic exist for this session.
+ * Returns 0 on error (non-blocking).
+ */
+async function countPriorExchanges(sessionId, topicTag) {
+  const { data, error } = await supabase
+    .from('interactions')
+    .select('id', { count: 'exact' })
+    .eq('session_id', sessionId)
+    .eq('topic_tag', topicTag);
+  if (error) return 0;
+  return data ? data.length : 0;
+}
+
+/**
  * Generate a Socratic Claude response.
  *
  * @param {string} message - current student message
@@ -113,8 +147,10 @@ function inferTopicTag(question) {
 async function generateResponse(message, history, chunks, sessionId) {
   const contextBlock = formatChunks(chunks);
 
-  // Cap history to last 10 messages
-  const recentHistory = (history || []).slice(-10);
+  // Cap history to last 10 messages; strip extra fields (e.g. sources) the Claude API doesn't accept
+  const recentHistory = (history || [])
+    .slice(-10)
+    .map(({ role, content }) => ({ role, content }));
 
   const messages = [
     // Inject context as first exchange so Claude "sees" the materials
@@ -147,20 +183,24 @@ async function generateResponse(message, history, chunks, sessionId) {
     excerpt: c.content.slice(0, 200),
   }));
 
-  // Log interaction to Supabase (fire-and-forget — don't block the response)
+  // Log interaction with hints tracking (fire-and-forget)
   const topicTag = inferTopicTag(message);
-  supabase
-    .from('interactions')
-    .insert({
-      session_id: sessionId,
-      topic_tag: topicTag,
-      question: message,
-      hints_needed: 0,
-      resolved: false,
-    })
-    .then(({ error }) => {
-      if (error) console.error('Failed to log interaction:', error.message);
-    });
+  const resolved = isResolved(message);
+
+  countPriorExchanges(sessionId, topicTag).then((prior) => {
+    supabase
+      .from('interactions')
+      .insert({
+        session_id: sessionId,
+        topic_tag: topicTag,
+        question: message,
+        hints_needed: prior, // how many exchanges on this topic before this one
+        resolved,
+      })
+      .then(({ error }) => {
+        if (error) console.error('Failed to log interaction:', error.message);
+      });
+  });
 
   return { response: responseText, sources };
 }
