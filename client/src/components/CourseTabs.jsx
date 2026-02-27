@@ -86,9 +86,17 @@ export function CourseTabs({ courses, activeCourseId, onSelect, onCreate, onDele
             style={{
               padding: '5px 10px', borderRadius: 8,
               background: '#0f1117', border: '1px solid #6366f1',
-              color: '#f1f5f9', fontSize: 12, outline: 'none', width: 130,
+              color: creating ? '#475569' : '#f1f5f9', fontSize: 12, outline: 'none', width: 130,
             }}
           />
+          {creating && (
+            <div style={{
+              width: 14, height: 14, flexShrink: 0,
+              border: '2px solid #6366f1', borderTopColor: 'transparent',
+              borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+            }} />
+          )}
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : (
         <button

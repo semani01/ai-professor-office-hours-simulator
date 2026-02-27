@@ -205,15 +205,17 @@ async function generateResponse(message, history, chunks, sessionId, userId, jwt
     excerpt: c.content.slice(0, 200),
   }));
 
-  // Log interaction with hints tracking (fire-and-forget)
+  // Log interaction non-blocking — does not affect the response
   const resolved = isResolved(message);
   const courseId = chunks[0]?.course_fk || null;
 
-  inferTopicTag(message, courseId, userId, jwt).then((topicTag) => {
-    countPriorExchanges(sessionId, topicTag, userId, jwt).then((prior) => {
-      const db = getAuthClient(jwt);
-      db.from('interactions')
-        .insert({
+  if (userId && jwt && courseId) {
+    (async () => {
+      try {
+        const topicTag = await inferTopicTag(message, courseId, userId, jwt);
+        const prior = await countPriorExchanges(sessionId, topicTag, userId, jwt);
+        const db = getAuthClient(jwt);
+        const { error } = await db.from('interactions').insert({
           session_id: sessionId,
           topic_tag: topicTag,
           question: message,
@@ -221,12 +223,13 @@ async function generateResponse(message, history, chunks, sessionId, userId, jwt
           resolved,
           user_id: userId,
           course_fk: courseId,
-        })
-        .then(({ error }) => {
-          if (error) console.error('Failed to log interaction:', error.message);
         });
-    });
-  });
+        if (error) console.error('[claude] Failed to log interaction:', error.message);
+      } catch (err) {
+        console.error('[claude] Interaction logging error:', err.message);
+      }
+    })();
+  }
 
   return { response: responseText, sources };
 }

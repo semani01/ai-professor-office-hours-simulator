@@ -23,6 +23,9 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
   const [fileAvailable, setFileAvailable] = useState(null); // null=checking, true, false
   const [visible, setVisible] = useState(false);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [tipDismissed, setTipDismissed] = useState(
+    () => sessionStorage.getItem('pdf-tip-dismissed') === '1'
+  );
 
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -212,25 +215,43 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
             ) : fileAvailable ? (
-              <iframe
-                src={downloadUrl}
-                title={file.fileName}
-                style={{ flex: 1, border: 'none', width: '100%', height: '100%' }}
-              />
+              <>
+                {/* Dismissible tip strip for PDF controls */}
+                {!tipDismissed && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '7px 14px', flexShrink: 0,
+                    background: '#0d1b2e', borderBottom: '1px solid #1e3a5f',
+                    fontSize: 11, color: '#7dd3fc',
+                  }}>
+                    <span>💡 Use Ctrl+scroll to zoom · browser toolbar to navigate pages</span>
+                    <button
+                      onClick={() => { setTipDismissed(true); sessionStorage.setItem('pdf-tip-dismissed', '1'); }}
+                      style={{ background: 'none', border: 'none', color: '#7dd3fc', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 0 0 8px' }}
+                    >×</button>
+                  </div>
+                )}
+                <iframe
+                  src={downloadUrl}
+                  title={file.fileName}
+                  style={{ flex: 1, border: 'none', width: '100%', height: '100%' }}
+                />
+              </>
             ) : (
               <div style={{
                 flex: 1, display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32,
               }}>
-                <div style={{ fontSize: 32 }}>📄</div>
-                <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6 }}>
+                <div style={{ fontSize: 32 }}>📤</div>
+                <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.7 }}>
                   This file was uploaded before file storage was enabled.<br />
-                  Re-upload it to view the original document.
+                  Re-upload it to view the original document.<br />
+                  <span style={{ fontSize: 11, color: '#475569' }}>Drag it to the upload area in the sidebar.</span>
                 </div>
               </div>
             )
           ) : (
-            // DOCX / PPTX — can't render natively; show extracted text
+            // DOCX / PPTX — can't render natively; show extracted text as paragraphs
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 32px 20px' }}>
               <div style={{
                 marginBottom: 14, padding: '10px 14px', borderRadius: 8,
@@ -249,14 +270,19 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                   }} />
                   <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                 </div>
+              ) : docText ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {docText.split('\n\n').filter(Boolean).map((para, i) => (
+                    <p key={i} style={{
+                      margin: 0, fontSize: 13, color: '#cbd5e1',
+                      lineHeight: 1.75, wordBreak: 'break-word',
+                    }}>
+                      {para.trim()}
+                    </p>
+                  ))}
+                </div>
               ) : (
-                <pre style={{
-                  margin: 0, fontFamily: 'inherit', fontSize: 13,
-                  color: '#cbd5e1', lineHeight: 1.75,
-                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                }}>
-                  {docText || 'No text content found.'}
-                </pre>
+                <p style={{ fontSize: 13, color: '#475569', margin: 0 }}>No text content found.</p>
               )}
             </div>
           )}

@@ -9,8 +9,11 @@ export function SourceCitation({ sources }) {
   const [expanded, setExpanded] = useState(null);
   if (!sources || sources.length === 0) return null;
 
+  // Deduplicate by sourceFile + weekNumber so the same file cited for different weeks both show
   const unique = sources.filter(
-    (s, i, arr) => arr.findIndex((x) => x.sourceFile === s.sourceFile) === i
+    (s, i, arr) => arr.findIndex(
+      (x) => x.sourceFile === s.sourceFile && x.weekNumber === s.weekNumber
+    ) === i
   );
 
   return (
