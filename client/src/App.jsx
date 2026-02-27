@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { ChatPanel } from './components/ChatPanel';
+import { WeakSpotDashboard } from './components/WeakSpotDashboard';
 
 const COURSE_ID = 'default';
 
 export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [sessionId, setSessionId] = useState(null);
 
   function handleFilesIngested(newFiles) {
     setUploadedFiles((prev) => [...prev, ...newFiles]);
@@ -65,8 +67,16 @@ export default function App() {
               Course Materials
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          <div style={{ overflowY: 'auto', padding: 16 }}>
             <FileUpload courseId={COURSE_ID} onFilesIngested={handleFilesIngested} />
+          </div>
+
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid #1e293b', margin: '0 16px' }} />
+
+          {/* Weak Spot Dashboard */}
+          <div style={{ overflowY: 'auto', padding: 16 }}>
+            <WeakSpotDashboard sessionId={sessionId} courseId={COURSE_ID} />
           </div>
         </aside>
 
@@ -76,6 +86,7 @@ export default function App() {
             courseId={COURSE_ID}
             uploadedFiles={uploadedFiles}
             hasUploads={hasUploads}
+            onSessionId={setSessionId}
           />
         </section>
       </main>

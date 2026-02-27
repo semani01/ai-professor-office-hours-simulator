@@ -81,24 +81,84 @@ function formatChunks(chunks) {
 }
 
 /**
- * Infer a short topic tag from the question (keyword-based).
- * Returns a 2-4 word string or 'General'.
+ * Score how well a question matches a topic name.
+ * Splits the topic into words and counts how many appear in the question.
+ * Returns a score 0–1 (fraction of topic words found).
  */
-function inferTopicTag(question) {
+function topicMatchScore(question, topic) {
   const q = question.toLowerCase();
-  if (q.includes('critical path') || q.includes('cpm')) return 'Critical Path Method';
-  if (q.includes('risk')) return 'Risk Management';
-  if (q.includes('agile') || q.includes('scrum') || q.includes('sprint')) return 'Agile';
-  if (q.includes('scope') || q.includes('wbs') || q.includes('work breakdown')) return 'Scope Management';
-  if (q.includes('schedule') || q.includes('gantt') || q.includes('milestone')) return 'Schedule Management';
-  if (q.includes('cost') || q.includes('budget') || q.includes('earned value')) return 'Cost Management';
-  if (q.includes('stakeholder')) return 'Stakeholder Management';
-  if (q.includes('quality')) return 'Quality Management';
-  if (q.includes('communication')) return 'Communications Management';
-  if (q.includes('procurement') || q.includes('contract')) return 'Procurement Management';
-  if (q.includes('integration') || q.includes('charter')) return 'Project Integration';
-  if (q.includes('resource') || q.includes('team')) return 'Resource Management';
-  return 'General';
+  const words = topic.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  if (words.length === 0) return 0;
+  const matched = words.filter((w) => q.includes(w)).length;
+  return matched / words.length;
+}
+
+/**
+ * Infer a topic tag from the question by matching against course topics stored in Supabase.
+ * Falls back to 'General' if no topics are loaded or nothing matches.
+ *
+ * @param {string} question
+ * @param {string} courseId
+ * @returns {Promise<string>}
+ */
+async function inferTopicTag(question, courseId) {
+  const { data, error } = await supabase
+    .from('course_topics')
+    .select('topic')
+    .eq('course_id', courseId)
+    .order('position', { ascending: true });
+
+  if (error || !data || data.length === 0) return 'General';
+
+  const topics = data.map((r) => r.topic);
+
+  // Find the topic with the highest word-overlap score
+  let bestTopic = null;
+  let bestScore = 0;
+  for (const topic of topics) {
+    const score = topicMatchScore(question, topic);
+    if (score > bestScore) {
+      bestScore = score;
+      bestTopic = topic;
+    }
+  }
+
+  // Require at least one meaningful word match (score > 0)
+  return bestScore > 0 ? bestTopic : 'General';
+}
+
+/**
+ * Detect if the student's message indicates they have understood / resolved the topic.
+ * Simple keyword heuristic — avoids an extra API call.
+ */
+function isResolved(message) {
+  const m = message.toLowerCase();
+  return (
+    m.includes('i understand') ||
+    m.includes('i get it') ||
+    m.includes('that makes sense') ||
+    m.includes('got it') ||
+    m.includes('makes sense now') ||
+    m.includes('i see now') ||
+    m.includes('i think i understand') ||
+    m.includes('ahh') ||
+    m.includes('ah i see') ||
+    m.includes('oh i see')
+  );
+}
+
+/**
+ * Count how many prior exchanges on this topic exist for this session.
+ * Returns 0 on error (non-blocking).
+ */
+async function countPriorExchanges(sessionId, topicTag) {
+  const { data, error } = await supabase
+    .from('interactions')
+    .select('id', { count: 'exact' })
+    .eq('session_id', sessionId)
+    .eq('topic_tag', topicTag);
+  if (error) return 0;
+  return data ? data.length : 0;
 }
 
 /**
@@ -113,8 +173,10 @@ function inferTopicTag(question) {
 async function generateResponse(message, history, chunks, sessionId) {
   const contextBlock = formatChunks(chunks);
 
-  // Cap history to last 10 messages
-  const recentHistory = (history || []).slice(-10);
+  // Cap history to last 10 messages; strip extra fields (e.g. sources) the Claude API doesn't accept
+  const recentHistory = (history || [])
+    .slice(-10)
+    .map(({ role, content }) => ({ role, content }));
 
   const messages = [
     // Inject context as first exchange so Claude "sees" the materials
@@ -147,20 +209,25 @@ async function generateResponse(message, history, chunks, sessionId) {
     excerpt: c.content.slice(0, 200),
   }));
 
-  // Log interaction to Supabase (fire-and-forget — don't block the response)
-  const topicTag = inferTopicTag(message);
-  supabase
-    .from('interactions')
-    .insert({
-      session_id: sessionId,
-      topic_tag: topicTag,
-      question: message,
-      hints_needed: 0,
-      resolved: false,
-    })
-    .then(({ error }) => {
-      if (error) console.error('Failed to log interaction:', error.message);
+  // Log interaction with hints tracking (fire-and-forget)
+  const resolved = isResolved(message);
+
+  inferTopicTag(message, chunks[0]?.course_id || 'default').then((topicTag) => {
+    countPriorExchanges(sessionId, topicTag).then((prior) => {
+      supabase
+        .from('interactions')
+        .insert({
+          session_id: sessionId,
+          topic_tag: topicTag,
+          question: message,
+          hints_needed: prior,
+          resolved,
+        })
+        .then(({ error }) => {
+          if (error) console.error('Failed to log interaction:', error.message);
+        });
     });
+  });
 
   return { response: responseText, sources };
 }

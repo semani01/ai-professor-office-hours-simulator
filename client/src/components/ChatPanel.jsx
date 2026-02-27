@@ -24,11 +24,17 @@ function TypingDots() {
   );
 }
 
-export function ChatPanel({ courseId, uploadedFiles, hasUploads }) {
-  const { messages, loading, error, sendMessage } = useChat(courseId);
+export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId }) {
+  const { messages, loading, error, sendMessage, sessionId } = useChat(courseId);
+
   const [input, setInput] = useState('');
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Bubble sessionId up to App once on mount so the dashboard can use it
+  useEffect(() => {
+    if (onSessionId && sessionId) onSessionId(sessionId);
+  }, [sessionId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

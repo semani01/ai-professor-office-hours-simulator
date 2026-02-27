@@ -4,6 +4,8 @@ const cors = require('cors');
 
 const uploadRouter = require('./routes/upload');
 const chatRouter = require('./routes/chat');
+const sessionRouter = require('./routes/session');
+const topicsRouter = require('./routes/topics');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +19,8 @@ app.get('/health', (req, res) => {
 
 app.use('/api', uploadRouter);
 app.use('/api', chatRouter);
+app.use('/api', sessionRouter);
+app.use('/api', topicsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

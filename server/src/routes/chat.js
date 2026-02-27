@@ -21,7 +21,6 @@ router.post('/chat', async (req, res) => {
   }
 
   const course = courseId || 'default';
-
   try {
     // 1. Retrieve relevant chunks
     const chunks = await retrieveChunks(message, course);
