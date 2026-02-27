@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * Classify a topic into a readiness tier based on hints needed and resolved status.
@@ -12,36 +13,10 @@ function getTier(topic) {
   return 'yellow';
 }
 
-const TIER_STYLES = {
-  green: {
-    bg: '#052e16',
-    border: '#166534',
-    text: '#4ade80',
-    dot: '#22c55e',
-    meta: '#86efac',
-    label: 'Demonstrated',
-  },
-  yellow: {
-    bg: '#1c1400',
-    border: '#854d0e',
-    text: '#fbbf24',
-    dot: '#f59e0b',
-    meta: '#fde68a',
-    label: 'Needs Review',
-  },
-  red: {
-    bg: '#2d0a0a',
-    border: '#7f1d1d',
-    text: '#f87171',
-    dot: '#ef4444',
-    meta: '#fca5a5',
-    label: 'Revisit',
-  },
-};
-
 function TopicCard({ topic }) {
+  const { theme } = useTheme();
   const tier = getTier(topic);
-  const s = TIER_STYLES[tier];
+  const s = theme[tier];
 
   return (
     <div style={{
@@ -78,6 +53,7 @@ function TopicCard({ topic }) {
 }
 
 export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion }) {
+  const { theme } = useTheme();
   const [topics, setTopics] = useState([]);
   const [hasCourseTopic, setHasCourseTopic] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,7 +102,7 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
         {[80, 55, 70].map((w, i) => (
           <div key={i} style={{
             height: 12, borderRadius: 6,
-            background: '#1e293b', width: `${w}%`, opacity: 0.5,
+            background: theme.border, width: `${w}%`, opacity: 0.5,
           }} />
         ))}
       </div>
@@ -138,8 +114,8 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
     return (
       <div style={{
         padding: '14px',
-        background: '#1c1a00',
-        border: '1px solid #854d0e',
+        background: theme.yellow.bg,
+        border: `1px solid ${theme.yellow.border}`,
         borderRadius: 10,
         display: 'flex',
         flexDirection: 'column',
@@ -147,9 +123,9 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ fontSize: 16 }}>📋</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#fbbf24' }}>Upload your syllabus</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: theme.yellow.text }}>Upload your syllabus</span>
         </div>
-        <p style={{ fontSize: 12, color: '#fde68a', margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 12, color: theme.yellow.meta, margin: 0, lineHeight: 1.5 }}>
           Upload a syllabus file to enable topic tracking. The session map will group your questions by course topic automatically.
         </p>
       </div>
@@ -160,7 +136,7 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
     return (
       <div style={{
         padding: '16px',
-        color: '#64748b',
+        color: theme.textMuted,
         fontSize: 13,
         textAlign: 'center',
         lineHeight: 1.6,
@@ -175,11 +151,11 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: theme.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Session Map
         </div>
         {loading && (
-          <div style={{ fontSize: 11, color: '#64748b' }}>updating…</div>
+          <div style={{ fontSize: 11, color: theme.textMuted }}>updating…</div>
         )}
       </div>
 
@@ -195,8 +171,8 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
         <div style={{
           marginTop: 4,
           padding: '12px 14px',
-          background: '#111827',
-          border: '1px solid #1e293b',
+          background: theme.bgCard,
+          border: `1px solid ${theme.border}`,
           borderRadius: 10,
           display: 'flex',
           flexDirection: 'column',
@@ -204,25 +180,25 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
         }}>
           {demonstrated.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: theme.green.text, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 ✓ Demonstrated
               </div>
-              <div style={{ fontSize: 12, color: '#86efac', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: theme.green.meta, lineHeight: 1.6 }}>
                 {demonstrated.map((t) => t.tag).join(' · ')}
               </div>
             </div>
           )}
           {(needsReview.length > 0 || revisit.length > 0) && (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#f87171', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: theme.red.text, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 ↺ To Revisit
               </div>
-              <div style={{ fontSize: 12, color: '#fca5a5', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: theme.red.meta, lineHeight: 1.6 }}>
                 {[...revisit, ...needsReview].map((t) => t.tag).join(' · ')}
               </div>
             </div>
           )}
-          <p style={{ fontSize: 11, color: '#64748b', margin: 0, fontStyle: 'italic' }}>
+          <p style={{ fontSize: 11, color: theme.textMuted, margin: 0, fontStyle: 'italic' }}>
             When to stop studying is your decision.
           </p>
         </div>

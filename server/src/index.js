@@ -8,6 +8,9 @@ const sessionRouter = require('./routes/session');
 const topicsRouter = require('./routes/topics');
 const coursesRouter = require('./routes/courses');
 const filesRouter = require('./routes/files');
+const { router: xpRouter } = require('./routes/xp');
+const quizRouter = require('./routes/quiz');
+const { router: achievementsRouter } = require('./routes/achievements');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,6 +28,9 @@ app.use('/api', sessionRouter);
 app.use('/api', topicsRouter);
 app.use('/api', coursesRouter);
 app.use('/api', filesRouter);
+app.use('/api', xpRouter);
+app.use('/api', quizRouter);
+app.use('/api', achievementsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

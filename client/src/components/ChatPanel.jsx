@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useChat } from '../hooks/useChat';
 import { SourceCitation } from './SourceCitation';
+import { useTheme } from '../context/ThemeContext';
 
-function TypingDots() {
+function TypingDots({ theme }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '14px 16px' }}>
       {[0, 150, 300].map((delay) => (
         <span key={delay} style={{
-          width: 7, height: 7, borderRadius: '50%', background: '#475569',
+          width: 7, height: 7, borderRadius: '50%', background: theme.textFaint,
           display: 'inline-block',
           animation: 'bounce 1.2s ease-in-out infinite',
           animationDelay: `${delay}ms`,
@@ -26,6 +27,7 @@ function TypingDots() {
 
 export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef }) {
   const { messages, loading, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token);
+  const { theme } = useTheme();
 
   const [input, setInput] = useState('');
   const bottomRef = useRef(null);
@@ -65,22 +67,22 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f1117' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bgBase }}>
       {/* Active materials bar */}
       {uploadedFiles.length > 0 && (
         <div style={{
-          padding: '8px 20px', borderBottom: '1px solid #1e293b',
+          padding: '8px 20px', borderBottom: `1px solid ${theme.border}`,
           display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-          background: '#0d1117', flexShrink: 0,
+          background: theme.bgSurface, flexShrink: 0,
         }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>
             Active:
           </span>
           {uploadedFiles.map((f, i) => (
             <span key={i} style={{
               fontSize: 11, padding: '2px 8px', borderRadius: 10,
-              background: '#1e1b4b', color: '#818cf8',
-              border: '1px solid #312e81',
+              background: theme.accentBg, color: theme.accentLight,
+              border: `1px solid ${theme.accentBorder}`,
               maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               {f.fileName}
@@ -94,7 +96,7 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
         {messages.length === 0 && !loading && (
           <div style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', gap: 12, color: '#475569', paddingTop: 80,
+            flexDirection: 'column', gap: 12, color: theme.textFaint, paddingTop: 80,
           }}>
             <div style={{
               width: 56, height: 56, borderRadius: 16,
@@ -102,13 +104,13 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
               border: '1px solid #312e81',
             }}>🎓</div>
-            <p style={{ fontSize: 14, color: '#334155', margin: 0, fontWeight: 500 }}>
+            <p style={{ fontSize: 14, color: theme.textMuted, margin: 0, fontWeight: 500 }}>
               {hasUploads
                 ? 'What would you like to understand better?'
                 : 'Upload your course materials to get started'}
             </p>
             {hasUploads && (
-              <p style={{ fontSize: 12, color: '#1e293b', margin: 0 }}>
+              <p style={{ fontSize: 12, color: theme.border, margin: 0 }}>
                 I'll guide you Socratically — no direct answers, just good questions
               </p>
             )}
@@ -144,9 +146,9 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
                       border: msg.failed ? '1px solid #7f1d1d' : 'none',
                     }
                   : {
-                      background: '#111827',
-                      border: '1px solid #1e293b',
-                      color: '#cbd5e1',
+                      background: theme.bgCard,
+                      border: `1px solid ${theme.border}`,
+                      color: theme.textBody,
                     }),
               }}>
                 {msg.role === 'assistant' ? (
@@ -186,8 +188,8 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
             }}>🎓</div>
-            <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: '18px 18px 18px 4px' }}>
-              <TypingDots />
+            <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: '18px 18px 18px 4px' }}>
+              <TypingDots theme={theme} />
             </div>
           </div>
         )}
@@ -207,12 +209,12 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
 
       {/* Input area */}
       <div style={{
-        borderTop: '1px solid #1e293b', padding: '16px 20px',
-        background: '#0d1117', flexShrink: 0,
+        borderTop: `1px solid ${theme.border}`, padding: '16px 20px',
+        background: theme.bgSurface, flexShrink: 0,
       }}>
         <div style={{
           display: 'flex', gap: 10, alignItems: 'flex-end',
-          background: '#111827', border: `1px solid ${hasUploads ? '#334155' : '#1e293b'}`,
+          background: theme.bgInput, border: `1px solid ${hasUploads ? theme.borderStrong : theme.border}`,
           borderRadius: 14, padding: '8px 8px 8px 16px',
           transition: 'border-color 0.15s',
         }}>
@@ -230,7 +232,7 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             rows={1}
             style={{
               flex: 1, resize: 'none', border: 'none', outline: 'none',
-              background: 'transparent', color: '#e2e8f0', fontSize: 14, lineHeight: 1.5,
+              background: 'transparent', color: theme.textPrimary, fontSize: 14, lineHeight: 1.5,
               maxHeight: 120, fontFamily: 'inherit',
               cursor: !hasCourse || !hasUploads ? 'not-allowed' : 'text',
             }}
@@ -245,9 +247,9 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             style={{
               width: 36, height: 36, borderRadius: 10, border: 'none',
               background: !hasCourse || !hasUploads || loading || !input.trim()
-                ? '#1e293b'
+                ? theme.border
                 : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: !hasCourse || !hasUploads || loading || !input.trim() ? '#475569' : '#fff',
+              color: !hasCourse || !hasUploads || loading || !input.trim() ? theme.textFaint : '#fff',
               cursor: !hasCourse || !hasUploads || loading || !input.trim() ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 16, flexShrink: 0,
@@ -257,7 +259,7 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             {loading ? '⏳' : '↑'}
           </button>
         </div>
-        <p style={{ fontSize: 11, color: '#1e293b', textAlign: 'center', margin: '8px 0 0', letterSpacing: '0.01em' }}>
+        <p style={{ fontSize: 11, color: theme.border, textAlign: 'center', margin: '8px 0 0', letterSpacing: '0.01em' }}>
           Enter to send · Shift+Enter for new line
         </p>
       </div>

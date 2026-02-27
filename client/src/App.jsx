@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthGate } from './components/AuthGate';
 import { CourseTabs } from './components/CourseTabs';
 import { FileUpload } from './components/FileUpload';
 import { ChatPanel } from './components/ChatPanel';
-import { WeakSpotDashboard } from './components/WeakSpotDashboard';
+import { KnowledgePortfolio } from './components/KnowledgePortfolio';
 import { FileViewerModal } from './components/FileViewerModal';
+import { XpBar } from './components/XpBar';
+import { AchievementsButton } from './components/Achievements';
+import { QuizMode } from './components/QuizMode';
 
 function AppContent({ session, signOut }) {
   const token = session?.access_token;
+  const { theme, toggleTheme } = useTheme();
 
   const [courses, setCourses] = useState([]);
   const [activeCourseId, setActiveCourseId] = useState(null);
@@ -17,8 +22,10 @@ function AppContent({ session, signOut }) {
   const [sessionId, setSessionId] = useState(null);
   const [topicsVersion, setTopicsVersion] = useState(0);
   const [viewingFile, setViewingFile] = useState(null);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [xpData, setXpData] = useState(null);
+  const [xpVersion, setXpVersion] = useState(0);
 
-  // Stable ref so resetMessages can be called when course switches
   const resetMessagesRef = useRef(null);
 
   // Load courses on mount
@@ -28,7 +35,6 @@ function AppContent({ session, signOut }) {
       .then((r) => r.json())
       .then(async (data) => {
         let list = data.courses || [];
-        // Auto-create a default course for new users
         if (list.length === 0) {
           const res = await fetch('/api/courses', {
             method: 'POST',
@@ -46,6 +52,15 @@ function AppContent({ session, signOut }) {
 
   useEffect(() => { loadCourses(); }, [token]);
 
+  // Load XP data
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/xp', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setXpData(data); })
+      .catch(() => {});
+  }, [token, xpVersion]);
+
   // When active course changes, reset files + session
   useEffect(() => {
     setUploadedFiles([]);
@@ -55,10 +70,8 @@ function AppContent({ session, signOut }) {
   }, [activeCourseId]);
 
   function handleFilesIngested(newFiles, forCourseId) {
-    // Ignore stale callbacks from uploads that started on a different course
     if (forCourseId && forCourseId !== activeCourseId) return;
     setUploadedFiles((prev) => [...prev, ...newFiles]);
-    // If a syllabus was ingested, bump topicsVersion so the dashboard re-fetches
     if (newFiles.some((f) => f.sourceType === 'syllabus')) {
       setTopicsVersion((v) => v + 1);
     }
@@ -84,7 +97,6 @@ function AppContent({ session, signOut }) {
     });
     setCourses((prev) => {
       const next = prev.filter((c) => c.id !== courseId);
-      // Switch to first remaining course, or null
       if (activeCourseId === courseId) {
         setActiveCourseId(next[0]?.id ?? null);
       }
@@ -92,35 +104,40 @@ function AppContent({ session, signOut }) {
     });
   }
 
+  function handleXpEarned() {
+    // Bump version to re-fetch XP after quiz or message
+    setXpVersion((v) => v + 1);
+  }
+
   const hasUploads = uploadedFiles.length > 0;
   const activeCourse = courses.find((c) => c.id === activeCourseId);
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f1117' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: theme.bgBase }}>
       {/* Header */}
       <header style={{
-        borderBottom: '1px solid #1e293b',
-        padding: '10px 20px',
+        borderBottom: `1px solid ${theme.border}`,
+        padding: '8px 16px',
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
-        background: '#0f1117',
+        gap: 12,
+        background: theme.bgBase,
         flexShrink: 0,
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <div style={{
-            width: 30, height: 30, borderRadius: 8,
+            width: 28, height: 28, borderRadius: 8,
             background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
           }}>🎓</div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
-            AI Professor Office Hours
+          <span style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+            AI Professor
           </span>
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 20, background: '#1e293b', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 18, background: theme.border, flexShrink: 0 }} />
 
         {/* Course tabs */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -133,44 +150,84 @@ function AppContent({ session, signOut }) {
           />
         </div>
 
-        {/* Right: file count + sign out */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <div style={{
-            fontSize: 11, color: '#6366f1', background: '#1e1b4b',
-            padding: '4px 10px', borderRadius: 20, border: '1px solid #312e81', fontWeight: 500,
-          }}>
-            {hasUploads ? `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} loaded` : 'No materials'}
-          </div>
+        {/* Right section: Quiz Me + XP bar + Achievements + theme + signout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Quiz Me button */}
+          <button
+            onClick={() => activeCourseId && setQuizOpen(true)}
+            disabled={!activeCourseId || !hasUploads}
+            title={!hasUploads ? 'Upload materials first to take a quiz' : 'Take a quiz from your materials'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 12px', borderRadius: 8, border: 'none',
+              background: activeCourseId && hasUploads
+                ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+                : theme.border,
+              color: activeCourseId && hasUploads ? '#fff' : theme.textFaint,
+              cursor: activeCourseId && hasUploads ? 'pointer' : 'not-allowed',
+              fontSize: 12, fontWeight: 600, transition: 'all 0.15s', flexShrink: 0,
+            }}
+          >
+            <span>⚡</span>
+            <span>Quiz Me</span>
+          </button>
+
+          {/* XP bar */}
+          <XpBar xpData={xpData} />
+
+          {/* Achievements */}
+          <AchievementsButton token={token} />
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 18, background: theme.border, flexShrink: 0 }} />
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            title={theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              background: 'none', border: `1px solid ${theme.border}`, borderRadius: 8,
+              color: theme.textFaint, cursor: 'pointer', fontSize: 14,
+              width: 30, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s', flexShrink: 0,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = theme.borderStrong; e.currentTarget.style.color = theme.textSecondary; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.textFaint; }}
+          >
+            {theme.isDark ? '☀️' : '🌙'}
+          </button>
+
+          {/* Sign out */}
           <button
             onClick={signOut}
             title="Sign out"
             style={{
-              background: 'none', border: '1px solid #1e293b', borderRadius: 8,
-              color: '#475569', cursor: 'pointer', fontSize: 11, padding: '4px 10px',
+              background: 'none', border: `1px solid ${theme.border}`, borderRadius: 8,
+              color: theme.textFaint, cursor: 'pointer', fontSize: 11, padding: '4px 10px',
               transition: 'all 0.15s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = theme.borderStrong; e.currentTarget.style.color = theme.textSecondary; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.textFaint; }}
           >
             Sign out
           </button>
         </div>
       </header>
 
-      {/* Main layout */}
+      {/* 3-column main layout */}
       <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left sidebar */}
+        {/* Left panel — Sources (240px) */}
         <aside style={{
-          width: 280, borderRight: '1px solid #1e293b',
+          width: 240, borderRight: `1px solid ${theme.border}`,
           display: 'flex', flexDirection: 'column',
-          background: '#0d1117', flexShrink: 0, overflow: 'hidden',
+          background: theme.bgSurface, flexShrink: 0, overflow: 'hidden',
         }}>
-          <div style={{ padding: '12px 16px 8px', borderBottom: '1px solid #1e293b' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <div style={{ padding: '10px 14px 8px', borderBottom: `1px solid ${theme.border}` }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               {activeCourse ? activeCourse.name : 'Course Materials'}
             </div>
           </div>
-          <div style={{ overflowY: 'auto', padding: 16, flex: 1 }}>
+          <div style={{ overflowY: 'auto', padding: 14, flex: 1 }}>
             {coursesError ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, paddingTop: 24 }}>
                 <div style={{ fontSize: 12, color: '#f87171', textAlign: 'center' }}>
@@ -180,11 +237,11 @@ function AppContent({ session, signOut }) {
                   onClick={loadCourses}
                   style={{
                     fontSize: 11, padding: '5px 14px', borderRadius: 8,
-                    background: 'none', border: '1px solid #334155',
-                    color: '#94a3b8', cursor: 'pointer',
+                    background: 'none', border: `1px solid ${theme.borderStrong}`,
+                    color: theme.textSecondary, cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#6366f1'}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = '#334155'}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = theme.accent}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = theme.borderStrong}
                 >
                   Try again
                 </button>
@@ -197,28 +254,15 @@ function AppContent({ session, signOut }) {
                 onFileClick={setViewingFile}
               />
             ) : (
-              <div style={{ fontSize: 12, color: '#475569', textAlign: 'center', paddingTop: 20 }}>
+              <div style={{ fontSize: 12, color: theme.textFaint, textAlign: 'center', paddingTop: 20 }}>
                 Create a course to get started
               </div>
             )}
           </div>
-
-          {/* Divider */}
-          <div style={{ borderTop: '1px solid #1e293b', margin: '0 16px' }} />
-
-          {/* Weak Spot Dashboard */}
-          <div style={{ overflowY: 'auto', padding: 16 }}>
-            <WeakSpotDashboard
-              sessionId={sessionId}
-              courseId={activeCourseId}
-              token={token}
-              topicsVersion={topicsVersion}
-            />
-          </div>
         </aside>
 
-        {/* Chat area */}
-        <section style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Center panel — Chat (flex 1) */}
+        <section style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           <ChatPanel
             courseId={activeCourseId}
             uploadedFiles={uploadedFiles}
@@ -226,8 +270,32 @@ function AppContent({ session, signOut }) {
             onSessionId={setSessionId}
             token={token}
             onResetRef={resetMessagesRef}
+            onXpEarned={handleXpEarned}
           />
         </section>
+
+        {/* Right panel — Knowledge Portfolio (260px) */}
+        <aside style={{
+          width: 260, borderLeft: `1px solid ${theme.border}`,
+          display: 'flex', flexDirection: 'column',
+          background: theme.bgSurface, flexShrink: 0, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '10px 14px 8px', borderBottom: `1px solid ${theme.border}` }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Knowledge Portfolio
+            </div>
+          </div>
+          <div style={{ overflowY: 'auto', padding: 14, flex: 1 }}>
+            <KnowledgePortfolio
+              sessionId={sessionId}
+              courseId={activeCourseId}
+              token={token}
+              topicsVersion={topicsVersion}
+              xpData={xpData}
+              onXpRefresh={() => setXpVersion((v) => v + 1)}
+            />
+          </div>
+        </aside>
       </main>
 
       {/* File viewer modal */}
@@ -239,6 +307,16 @@ function AppContent({ session, signOut }) {
           onClose={() => setViewingFile(null)}
         />
       )}
+
+      {/* Quiz overlay */}
+      {quizOpen && activeCourseId && (
+        <QuizMode
+          courseId={activeCourseId}
+          token={token}
+          onClose={() => { setQuizOpen(false); handleXpEarned(); }}
+          onXpEarned={handleXpEarned}
+        />
+      )}
     </div>
   );
 }
@@ -246,8 +324,10 @@ function AppContent({ session, signOut }) {
 export default function App() {
   const { session, loading, signOut } = useAuth();
   return (
-    <AuthGate session={session} loading={loading}>
-      <AppContent session={session} signOut={signOut} />
-    </AuthGate>
+    <ThemeProvider>
+      <AuthGate session={session} loading={loading}>
+        <AppContent session={session} signOut={signOut} />
+      </AuthGate>
+    </ThemeProvider>
   );
 }

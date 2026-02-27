@@ -2,6 +2,8 @@ const express = require('express');
 const { retrieveChunks } = require('../lib/retrieval');
 const { generateResponse } = require('../lib/claude');
 const { extractJwt, getUserId } = require('../db/supabaseWithAuth');
+const { awardXp, XP_PER_MESSAGE } = require('./xp');
+const { checkAchievements } = require('./achievements');
 
 const router = express.Router();
 
@@ -34,6 +36,15 @@ router.post('/chat', async (req, res) => {
 
     // 2. Generate Socratic response
     const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt);
+
+    // 3. Award XP + check achievements (fire-and-forget — doesn't delay response)
+    const isFirstQuestion = !history || history.length === 0;
+    awardXp(userId, jwt, XP_PER_MESSAGE).then((xpResult) => {
+      checkAchievements(userId, jwt, {
+        firstQuestion: isFirstQuestion,
+        streak: xpResult?.streak,
+      }).catch(() => {});
+    }).catch((err) => console.error('[chat] XP/achievement error:', err.message));
 
     return res.json({ response, sources });
   } catch (err) {

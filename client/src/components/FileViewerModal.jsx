@@ -1,12 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-
-const SOURCE_TYPE_COLORS = {
-  lecture:    { bg: '#1e1b4b', text: '#818cf8', border: '#312e81' },
-  notes:      { bg: '#052e16', text: '#4ade80', border: '#14532d' },
-  assignment: { bg: '#431407', text: '#fb923c', border: '#7c2d12' },
-  syllabus:   { bg: '#2e1065', text: '#c084fc', border: '#4c1d95' },
-  material:   { bg: '#1e293b', text: '#94a3b8', border: '#334155' },
-};
+import { useTheme } from '../context/ThemeContext';
 
 const MIN_WIDTH = 360;
 const MAX_WIDTH = 1100;
@@ -17,6 +10,7 @@ function isPdf(fileName) {
 }
 
 export function FileViewerModal({ file, courseId, token, onClose }) {
+  const { theme } = useTheme();
   const [docText, setDocText] = useState('');
   const [meta, setMeta] = useState({ sourceType: file.sourceType, weekNumber: file.weekNumber });
   const [textLoading, setTextLoading] = useState(false);
@@ -105,7 +99,7 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
     window.addEventListener('mouseup', onUp);
   }
 
-  const colors = SOURCE_TYPE_COLORS[meta.sourceType] || SOURCE_TYPE_COLORS.material;
+  const colors = theme[meta.sourceType] || theme.material;
   const ext = file.fileName?.split('.').pop().toUpperCase() || '';
 
   return (
@@ -124,8 +118,8 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
           width,
           maxWidth: '94vw',
           height: '100%',
-          background: '#0d1117',
-          borderLeft: '1px solid #1e293b',
+          background: theme.bgBase,
+          borderLeft: `1px solid ${theme.border}`,
           display: 'flex',
           flexDirection: 'column',
           transform: visible ? 'translateX(0)' : 'translateX(100%)',
@@ -144,21 +138,21 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
           }}
         >
           <div
-            style={{ width: 3, height: 40, borderRadius: 2, background: '#334155', transition: 'background 0.15s' }}
+            style={{ width: 3, height: 40, borderRadius: 2, background: theme.borderStrong, transition: 'background 0.15s' }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#6366f1'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#334155'}
+            onMouseLeave={(e) => e.currentTarget.style.background = theme.borderStrong}
           />
         </div>
 
         {/* Header */}
         <div style={{
           padding: '14px 18px 12px 18px',
-          borderBottom: '1px solid #1e293b',
+          borderBottom: `1px solid ${theme.border}`,
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           gap: 12, flexShrink: 0,
         }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', wordBreak: 'break-word', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, wordBreak: 'break-word', lineHeight: 1.4 }}>
               {file.fileName}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
@@ -170,7 +164,7 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                 {meta.sourceType}
               </span>
               {meta.weekNumber && (
-                <span style={{ fontSize: 11, color: '#64748b' }}>Week {meta.weekNumber}</span>
+                <span style={{ fontSize: 11, color: theme.textMuted }}>Week {meta.weekNumber}</span>
               )}
               {/* Download link — always shown */}
               <a
@@ -178,11 +172,11 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                 download={file.fileName}
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                  fontSize: 11, color: '#6366f1', textDecoration: 'none',
+                  fontSize: 11, color: theme.accent, textDecoration: 'none',
                   display: 'flex', alignItems: 'center', gap: 3,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#818cf8'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}
+                onMouseEnter={(e) => e.currentTarget.style.color = theme.accentLight}
+                onMouseLeave={(e) => e.currentTarget.style.color = theme.accent}
               >
                 ↓ Download {ext}
               </a>
@@ -191,11 +185,11 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
           <button
             onClick={handleClose}
             style={{
-              background: 'none', border: 'none', color: '#475569',
+              background: 'none', border: 'none', color: theme.textFaint,
               cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4, flexShrink: 0,
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#f1f5f9'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#475569'}
+            onMouseEnter={(e) => e.currentTarget.style.color = theme.textPrimary}
+            onMouseLeave={(e) => e.currentTarget.style.color = theme.textFaint}
           >
             ×
           </button>
@@ -221,13 +215,14 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '7px 14px', flexShrink: 0,
-                    background: '#0d1b2e', borderBottom: '1px solid #1e3a5f',
-                    fontSize: 11, color: '#7dd3fc',
+                    background: theme.isDark ? '#0d1b2e' : '#eff6ff',
+                    borderBottom: `1px solid ${theme.isDark ? '#1e3a5f' : '#bfdbfe'}`,
+                    fontSize: 11, color: theme.isDark ? '#7dd3fc' : '#1d4ed8',
                   }}>
                     <span>💡 Use Ctrl+scroll to zoom · browser toolbar to navigate pages</span>
                     <button
                       onClick={() => { setTipDismissed(true); sessionStorage.setItem('pdf-tip-dismissed', '1'); }}
-                      style={{ background: 'none', border: 'none', color: '#7dd3fc', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 0 0 8px' }}
+                      style={{ background: 'none', border: 'none', color: theme.isDark ? '#7dd3fc' : '#1d4ed8', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 0 0 8px' }}
                     >×</button>
                   </div>
                 )}
@@ -243,10 +238,10 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                 alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32,
               }}>
                 <div style={{ fontSize: 32 }}>📤</div>
-                <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.7 }}>
+                <div style={{ fontSize: 13, color: theme.textMuted, textAlign: 'center', lineHeight: 1.7 }}>
                   This file was uploaded before file storage was enabled.<br />
                   Re-upload it to view the original document.<br />
-                  <span style={{ fontSize: 11, color: '#475569' }}>Drag it to the upload area in the sidebar.</span>
+                  <span style={{ fontSize: 11, color: theme.textFaint }}>Drag it to the upload area in the sidebar.</span>
                 </div>
               </div>
             )
@@ -255,8 +250,9 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 32px 20px' }}>
               <div style={{
                 marginBottom: 14, padding: '10px 14px', borderRadius: 8,
-                background: '#1c1a00', border: '1px solid #854d0e',
-                fontSize: 12, color: '#fbbf24', lineHeight: 1.5,
+                background: theme.isDark ? '#1c1a00' : '#fffbeb',
+                border: `1px solid ${theme.isDark ? '#854d0e' : '#fde68a'}`,
+                fontSize: 12, color: theme.isDark ? '#fbbf24' : '#92400e', lineHeight: 1.5,
               }}>
                 {ext} files can't be rendered in the browser. Showing extracted text below.
                 Use the download link above to open the original file.
@@ -274,7 +270,7 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {docText.split('\n\n').filter(Boolean).map((para, i) => (
                     <p key={i} style={{
-                      margin: 0, fontSize: 13, color: '#cbd5e1',
+                      margin: 0, fontSize: 13, color: theme.textBody,
                       lineHeight: 1.75, wordBreak: 'break-word',
                     }}>
                       {para.trim()}
@@ -282,7 +278,7 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
                   ))}
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: '#475569', margin: 0 }}>No text content found.</p>
+                <p style={{ fontSize: 13, color: theme.textFaint, margin: 0 }}>No text content found.</p>
               )}
             </div>
           )}

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 
 export function AuthGate({ children, session, loading }) {
   const { signIn, signUp } = useAuth();
+  const { theme } = useTheme();
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +16,7 @@ export function AuthGate({ children, session, loading }) {
     return (
       <div style={{
         height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#0f1117',
+        background: theme.bgBase,
       }}>
         <div style={{
           width: 28, height: 28,
@@ -50,7 +52,7 @@ export function AuthGate({ children, session, loading }) {
     <div style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: '#0f1117',
+      background: theme.bgBase,
       padding: 24,
     }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -63,26 +65,26 @@ export function AuthGate({ children, session, loading }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
         }}>🎓</div>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.01em' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.01em' }}>
             AI Professor Office Hours
           </div>
-          <div style={{ fontSize: 12, color: '#475569' }}>Socratic tutor grounded in your course materials</div>
+          <div style={{ fontSize: 12, color: theme.textFaint }}>Socratic tutor grounded in your course materials</div>
         </div>
       </div>
 
       {/* Card */}
       <div style={{
         width: '100%', maxWidth: 400,
-        background: '#111827', border: '1px solid #1e293b',
+        background: theme.bgCard, border: `1px solid ${theme.border}`,
         borderRadius: 16, padding: 32,
         display: 'flex', flexDirection: 'column', gap: 20,
       }}>
         {/* Title */}
         <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: '#f1f5f9' }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, color: theme.textPrimary }}>
             {mode === 'signin' ? 'Sign in' : 'Create account'}
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: theme.textMuted }}>
             {mode === 'signin'
               ? 'Welcome back — pick up where you left off.'
               : 'Your courses and progress are saved to your account.'}
@@ -114,7 +116,7 @@ export function AuthGate({ children, session, loading }) {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>Email</label>
+            <label style={{ fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>Email</label>
             <input
               type="email"
               value={email}
@@ -123,16 +125,16 @@ export function AuthGate({ children, session, loading }) {
               required
               style={{
                 padding: '10px 14px', borderRadius: 8,
-                background: '#0f1117', border: '1px solid #1e293b',
-                color: '#f1f5f9', fontSize: 14, outline: 'none',
+                background: theme.bgInputField, border: `1px solid ${theme.border}`,
+                color: theme.textPrimary, fontSize: 14, outline: 'none',
                 transition: 'border-color 0.15s',
               }}
               onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-              onBlur={(e) => e.target.style.borderColor = '#1e293b'}
+              onBlur={(e) => e.target.style.borderColor = theme.border}
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>Password</label>
+            <label style={{ fontSize: 12, fontWeight: 500, color: theme.textSecondary }}>Password</label>
             <input
               type="password"
               value={password}
@@ -142,12 +144,12 @@ export function AuthGate({ children, session, loading }) {
               minLength={6}
               style={{
                 padding: '10px 14px', borderRadius: 8,
-                background: '#0f1117', border: '1px solid #1e293b',
-                color: '#f1f5f9', fontSize: 14, outline: 'none',
+                background: theme.bgInputField, border: `1px solid ${theme.border}`,
+                color: theme.textPrimary, fontSize: 14, outline: 'none',
                 transition: 'border-color 0.15s',
               }}
               onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-              onBlur={(e) => e.target.style.borderColor = '#1e293b'}
+              onBlur={(e) => e.target.style.borderColor = theme.border}
             />
           </div>
 
@@ -179,12 +181,12 @@ export function AuthGate({ children, session, loading }) {
         </form>
 
         {/* Toggle */}
-        <div style={{ textAlign: 'center', fontSize: 13, color: '#475569' }}>
+        <div style={{ textAlign: 'center', fontSize: 13, color: theme.textFaint }}>
           {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
           <button
             onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); setSignupSuccess(false); }}
             style={{
-              background: 'none', border: 'none', color: '#818cf8',
+              background: 'none', border: 'none', color: theme.accentLight,
               cursor: 'pointer', fontSize: 13, fontWeight: 500, padding: 0,
             }}
           >

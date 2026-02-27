@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useUpload } from '../hooks/useUpload';
+import { useTheme } from '../context/ThemeContext';
 
 const ACCEPTED_TYPES = ['.pdf', '.docx', '.pptx'];
 const ACCEPTED_MIME = [
@@ -8,14 +9,6 @@ const ACCEPTED_MIME = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ];
 const MAX_SIZE_MB = 10;
-
-const SOURCE_TYPE_COLORS = {
-  lecture:    { bg: '#1e1b4b', text: '#818cf8', border: '#312e81' },
-  notes:      { bg: '#052e16', text: '#4ade80', border: '#14532d' },
-  assignment: { bg: '#431407', text: '#fb923c', border: '#7c2d12' },
-  syllabus:   { bg: '#2e1065', text: '#c084fc', border: '#4c1d95' },
-  material:   { bg: '#1e293b', text: '#94a3b8', border: '#334155' },
-};
 
 const FILE_ICONS = {
   pdf: '📕',
@@ -33,6 +26,7 @@ const SOURCE_TYPE_ICONS = {
 
 export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
   const { files, uploading, error, uploadFiles } = useUpload();
+  const { theme } = useTheme();
   const [dragOver, setDragOver] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -86,12 +80,12 @@ export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
         onDrop={onDrop}
         onClick={() => !uploading && inputRef.current?.click()}
         style={{
-          border: `2px dashed ${dragOver ? '#6366f1' : '#1e293b'}`,
+          border: `2px dashed ${dragOver ? '#6366f1' : theme.border}`,
           borderRadius: 12,
           padding: '20px 16px',
           textAlign: 'center',
           cursor: uploading ? 'not-allowed' : 'pointer',
-          background: dragOver ? '#1e1b4b22' : 'transparent',
+          background: dragOver ? `${theme.accentBg}44` : 'transparent',
           transition: 'all 0.15s ease',
         }}
       >
@@ -115,15 +109,15 @@ export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
             }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             <p style={{ fontSize: 12, color: '#6366f1', margin: 0, fontWeight: 500 }}>Processing...</p>
-            <p style={{ fontSize: 11, color: '#475569', margin: 0 }}>Chunking & embedding</p>
+            <p style={{ fontSize: 11, color: theme.textFaint, margin: 0 }}>Chunking & embedding</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <div style={{ fontSize: 24 }}>📂</div>
-            <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, fontWeight: 500 }}>
+            <p style={{ fontSize: 12, color: theme.textSecondary, margin: 0, fontWeight: 500 }}>
               Drop files or click to browse
             </p>
-            <p style={{ fontSize: 11, color: '#334155', margin: 0 }}>
+            <p style={{ fontSize: 11, color: theme.textMuted, margin: 0 }}>
               PDF · DOCX · PPTX · max {MAX_SIZE_MB}MB
             </p>
           </div>
@@ -149,7 +143,7 @@ export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
           {files.map((f, i) => {
             const ext = f.fileName.split('.').pop().toLowerCase();
             const icon = FILE_ICONS[ext] || SOURCE_TYPE_ICONS[f.sourceType] || '📄';
-            const colors = SOURCE_TYPE_COLORS[f.sourceType] || SOURCE_TYPE_COLORS.material;
+            const colors = theme[f.sourceType] || theme.material;
             const isHovered = hoveredIdx === i;
             return (
               <div
@@ -160,21 +154,21 @@ export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '8px 10px', borderRadius: 8,
-                  background: isHovered ? '#1a2035' : '#111827',
-                  border: `1px solid ${isHovered ? '#334155' : '#1e293b'}`,
+                  background: isHovered ? theme.bgHover : theme.bgCard,
+                  border: `1px solid ${isHovered ? theme.borderStrong : theme.border}`,
                   cursor: onFileClick ? 'pointer' : 'default',
                   transition: 'all 0.12s',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-                  <span style={{ fontSize: 11, color: isHovered ? '#cbd5e1' : '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.12s' }}>
+                  <span style={{ fontSize: 11, color: isHovered ? theme.textBody : theme.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color 0.12s' }}>
                     {f.fileName.length > 28 ? f.fileName.slice(0, 25) + '...' : f.fileName}
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 8 }}>
                   {f.weekNumber && (
-                    <span style={{ fontSize: 10, color: '#475569' }}>Wk {f.weekNumber}</span>
+                    <span style={{ fontSize: 10, color: theme.textFaint }}>Wk {f.weekNumber}</span>
                   )}
                   <span style={{
                     fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 500,
