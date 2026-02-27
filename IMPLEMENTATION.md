@@ -156,11 +156,32 @@ Keep entries concise. This is a development journal, not documentation.
 
 **Next:**
 - ~~Commit and push Phase 4~~ ✅
-- Cut `feat/phase-5-polish`, handle edge case UI states, session persistence, responsive layout, adversarial prompt testing, README finalization
+- ~~Dynamic topic extraction from syllabus~~ ✅ (see addendum below)
+- Cut `feat/phase-5-features`, build auth + multi-course + file viewer
 
 ---
 
-### [Date] — Phase 5: Polish & Edge Cases
+### 2026-02-26 — Phase 4 Addendum: Dynamic Topic Extraction & Dashboard Polish
+
+**Built:**
+- `server/src/lib/topicExtractor.js` — `extractTopicsFromSyllabus()` sends syllabus text to Claude haiku, parses JSON array of topic names (up to 25), robust fallback for imperfect JSON output
+- `server/src/routes/topics.js` — `GET /api/topics/:courseId` returns stored topics; consumed by frontend to decide whether to show syllabus nudge
+- `server/src/routes/upload.js` — when `sourceType === 'syllabus'`, extract topics and store in `course_topics` table (non-fatal: topic extraction failure never blocks ingestion)
+- `server/src/lib/claude.js` — `inferTopicTag()` redesigned as async; queries `course_topics` table for the courseId, scores each topic by word-overlap against the question, returns best match or 'General'
+- `client/src/components/WeakSpotDashboard.jsx` — "Upload your syllabus" amber nudge shown when `course_topics` is empty; all previously invisible text colors replaced; meta text uses tier accent color; font sizes bumped to 12–13px
+- `client/src/App.jsx` — passes `courseId` prop to `WeakSpotDashboard`
+
+**Decisions:**
+- Word-overlap scoring (not embeddings, not another Claude call) for topic matching — zero latency, zero cost, accurate enough for course syllabus vocabulary
+- `course_topics.position` column preserves syllabus order for deterministic tie-breaking
+- Syllabus nudge checks `GET /api/topics/:courseId` on mount — tells user exactly what action to take to unlock topic tracking
+
+**Problems:**
+- Syllabus nudge doesn't dismiss immediately after upload (topics re-fetch not triggered on upload completion) — fixed in `feat/phase-5-features` via `topicsVersion` counter prop
+
+---
+
+### [Date] — Phase 5: Auth, Multi-Course, File Viewer
 
 **Built:**
 - 

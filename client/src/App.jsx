@@ -76,7 +76,7 @@ export default function App() {
 
           {/* Weak Spot Dashboard */}
           <div style={{ overflowY: 'auto', padding: 16 }}>
-            <WeakSpotDashboard sessionId={sessionId} />
+            <WeakSpotDashboard sessionId={sessionId} courseId={COURSE_ID} />
           </div>
         </aside>
 

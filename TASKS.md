@@ -161,8 +161,15 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
   - [x] Footer note: "When to stop studying is your decision."
   - [x] Poll every 30s or refresh after each chat response
 - [x] Wire `WeakSpotDashboard` into `App.jsx` with `sessionId` prop
-- [ ] Commit and push to `feat/phase-4-dashboard`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 4 log entry (what was built, decisions, problems)
+- [x] **Phase 4 addendum — dynamic topic extraction from syllabus:**
+  - [x] `server/src/lib/topicExtractor.js` — Claude haiku call extracts topic list from syllabus text as JSON array
+  - [x] `server/src/routes/topics.js` — `GET /api/topics/:courseId` returns stored topics
+  - [x] `server/src/routes/upload.js` — on syllabus upload, extract + store topics in `course_topics` table (non-fatal)
+  - [x] `server/src/lib/claude.js` — `inferTopicTag()` now async, queries `course_topics`, word-overlap matches question against extracted topics
+  - [x] `client/src/components/WeakSpotDashboard.jsx` — "Upload your syllabus" nudge if no topics; legibility fixes (text colors, font sizes)
+  - [x] `client/src/App.jsx` — pass `courseId` to `WeakSpotDashboard`
+- [x] Commit and push to `feat/phase-4-dashboard`; open PR into `main`; merge
+- [x] Update `IMPLEMENTATION.md` — Phase 4 log entry (what was built, decisions, problems)
 
 **Exit condition:** Multi-topic SPM session shows dashboard accurately color-coded. Session summary correctly lists demonstrated vs. to-revisit topics. PR merged into `main`.
 

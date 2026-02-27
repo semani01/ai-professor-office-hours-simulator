@@ -6,6 +6,7 @@ const path = require('path');
 const { parseFile } = require('../lib/parser');
 const { chunkText } = require('../lib/chunker');
 const { embedChunks } = require('../lib/embeddings');
+const { extractTopicsFromSyllabus } = require('../lib/topicExtractor');
 const supabase = require('../db/supabase');
 
 const router = express.Router();
@@ -98,6 +99,28 @@ router.post('/upload', upload.array('files[]'), async (req, res) => {
 
       console.log(`[upload] ingested "${fileName}" — ${rows.length} chunks, sourceType="${sourceType}", week=${weekNumber}`);
       ingested.push({ fileName, sourceType, chunkCount: rows.length });
+
+      // If this is a syllabus, extract topics and store them for use in topic tagging
+      if (sourceType === 'syllabus') {
+        try {
+          const topics = await extractTopicsFromSyllabus(text);
+          if (topics.length > 0) {
+            // Clear any existing topics for this course before inserting fresh ones
+            await supabase.from('course_topics').delete().eq('course_id', courseId);
+            const topicRows = topics.map((topic, i) => ({ course_id: courseId, topic, position: i }));
+            const { error: topicError } = await supabase.from('course_topics').insert(topicRows);
+            if (topicError) {
+              console.error(`[upload] topic insert error: ${topicError.message}`);
+            } else {
+              console.log(`[upload] extracted ${topics.length} topics from syllabus "${fileName}"`);
+              ingested[ingested.length - 1].topicsExtracted = topics.length;
+            }
+          }
+        } catch (topicErr) {
+          // Non-fatal — topic extraction failure doesn't block ingestion
+          console.error(`[upload] topic extraction failed: ${topicErr.message}`);
+        }
+      }
     } catch (err) {
       errors.push({ fileName: file.originalname, error: err.message });
     } finally {
