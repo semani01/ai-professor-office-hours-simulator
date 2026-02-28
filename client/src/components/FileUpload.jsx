@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUpload } from '../hooks/useUpload';
 import { useTheme } from '../context/ThemeContext';
 
@@ -25,12 +25,29 @@ const SOURCE_TYPE_ICONS = {
 };
 
 export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
-  const { files, uploading, error, uploadFiles } = useUpload();
+  const { files, uploading, error, uploadFiles, setFiles } = useUpload();
   const { theme } = useTheme();
   const [dragOver, setDragOver] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const inputRef = useRef(null);
+
+  // Fetch already-uploaded files for this course on mount / course change
+  useEffect(() => {
+    if (!courseId || !token) return;
+    fetch(`/api/files/${courseId}/list`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.files?.length > 0) {
+          setFiles(data.files);
+          // Notify parent so the chat panel knows materials exist
+          if (onFilesIngested) onFilesIngested(data.files, courseId);
+        }
+      })
+      .catch(() => {});
+  }, [courseId, token]);
 
   function validateFiles(fileList) {
     for (const file of fileList) {

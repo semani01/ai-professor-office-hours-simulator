@@ -71,7 +71,11 @@ function AppContent({ session, signOut }) {
 
   function handleFilesIngested(newFiles, forCourseId) {
     if (forCourseId && forCourseId !== activeCourseId) return;
-    setUploadedFiles((prev) => [...prev, ...newFiles]);
+    setUploadedFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.fileName));
+      const fresh = newFiles.filter((f) => !existingNames.has(f.fileName));
+      return fresh.length > 0 ? [...prev, ...fresh] : prev;
+    });
     if (newFiles.some((f) => f.sourceType === 'syllabus')) {
       setTopicsVersion((v) => v + 1);
     }

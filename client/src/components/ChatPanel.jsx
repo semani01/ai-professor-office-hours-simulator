@@ -54,7 +54,7 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
     if (!text || loading || !hasUploads || !hasCourse) return;
     setInput('');
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = '24px';
     }
     sendMessage(text);
   }
@@ -221,7 +221,12 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              const el = e.target;
+              el.style.height = '24px';
+              el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+            }}
             onKeyDown={handleKeyDown}
             disabled={!hasCourse || !hasUploads || loading}
             placeholder={
@@ -233,12 +238,8 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             style={{
               flex: 1, resize: 'none', border: 'none', outline: 'none',
               background: 'transparent', color: theme.textPrimary, fontSize: 14, lineHeight: 1.5,
-              maxHeight: 120, fontFamily: 'inherit',
+              height: '24px', maxHeight: 120, overflowY: 'auto', fontFamily: 'inherit',
               cursor: !hasCourse || !hasUploads ? 'not-allowed' : 'text',
-            }}
-            onInput={(e) => {
-              e.target.style.height = 'auto';
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
           />
           <button

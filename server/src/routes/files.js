@@ -8,6 +8,47 @@ const STORED_DIR = path.join(__dirname, '../../uploads/stored');
 const router = express.Router();
 
 /**
+ * GET /api/files/:courseId/list
+ * Returns the distinct files uploaded to a course (one row per file).
+ * Response: { files: [{ fileName, sourceType, weekNumber }] }
+ */
+router.get('/files/:courseId/list', async (req, res) => {
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { courseId } = req.params;
+  const db = getAuthClient(jwt);
+
+  // Select one representative chunk per source_file to get the metadata
+  const { data, error } = await db
+    .from('chunks')
+    .select('source_file, source_type, week_number')
+    .eq('course_fk', courseId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('[files] list fetch error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch file list' });
+  }
+
+  // Deduplicate by source_file — keep first occurrence
+  const seen = new Set();
+  const files = [];
+  for (const row of (data || [])) {
+    if (!seen.has(row.source_file)) {
+      seen.add(row.source_file);
+      files.push({
+        fileName: row.source_file,
+        sourceType: row.source_type,
+        weekNumber: row.week_number,
+      });
+    }
+  }
+
+  return res.json({ files });
+});
+
+/**
  * GET /api/files/:courseId/chunks?sourceFile=<encoded>
  * Returns all stored chunks for a specific file in a course.
  * Used by the file viewer modal.
