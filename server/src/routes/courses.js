@@ -61,6 +61,38 @@ router.post('/courses', async (req, res) => {
 });
 
 /**
+ * PATCH /api/courses/:courseId
+ * Renames a course.
+ * Body: { name }
+ * Response: { course: { id, name, created_at } }
+ */
+router.patch('/courses/:courseId', async (req, res) => {
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { courseId } = req.params;
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Course name is required' });
+  }
+
+  const db = getAuthClient(jwt);
+  const { data, error } = await db
+    .from('courses')
+    .update({ name: name.trim() })
+    .eq('id', courseId)
+    .select('id, name, created_at')
+    .single();
+
+  if (error) {
+    console.error('[courses] rename error:', error.message);
+    return res.status(500).json({ error: 'Failed to rename course' });
+  }
+
+  return res.json({ course: data });
+});
+
+/**
  * DELETE /api/courses/:courseId
  * Deletes a course (cascades to all chunks, interactions, topics via FK).
  */

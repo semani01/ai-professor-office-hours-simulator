@@ -75,27 +75,35 @@ function ProgressRing({ value, max, color, size = 48 }) {
   );
 }
 
-export function KnowledgePortfolio({ sessionId, courseId, token, topicsVersion, xpData, onXpRefresh }) {
+export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVersion, xpData }) {
   const { theme } = useTheme();
   const [topics, setTopics] = useState([]);
   const [hasCourseTopic, setHasCourseTopic] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'mastered' | 'inprogress' | 'revisit'
 
+  // Reset immediately when course changes
+  useEffect(() => {
+    setTopics([]);
+    setHasCourseTopic(null);
+    setActiveSection('all');
+  }, [courseId]);
+
+  // Fetch whether a syllabus has been uploaded
   useEffect(() => {
     if (!courseId || !token) return;
-    setHasCourseTopic(null);
     fetch(`/api/topics/${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => setHasCourseTopic(data.topics?.length > 0))
       .catch(() => setHasCourseTopic(false));
   }, [courseId, token, topicsVersion]);
 
+  // Fetch course-level summary — all sessions, persists across page refreshes
   async function fetchSummary() {
-    if (!sessionId || !token) return;
+    if (!courseId || !token) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/session/${sessionId}/summary`, {
+      const res = await fetch(`/api/course/${courseId}/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -104,11 +112,17 @@ export function KnowledgePortfolio({ sessionId, courseId, token, topicsVersion, 
     finally { setLoading(false); }
   }
 
+  // Eager refresh when a new message or quiz completes
   useEffect(() => {
+    if (portfolioVersion > 0) fetchSummary();
+  }, [portfolioVersion]);
+
+  useEffect(() => {
+    if (!courseId || !token) return;
     fetchSummary();
-    const interval = setInterval(fetchSummary, 30_000);
+    const interval = setInterval(fetchSummary, 15_000);
     return () => clearInterval(interval);
-  }, [sessionId, token]);
+  }, [courseId, token]);
 
   const mastered   = topics.filter((t) => getTier(t) === 'mastered');
   const inprogress = topics.filter((t) => getTier(t) === 'inprogress');

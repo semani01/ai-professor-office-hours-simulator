@@ -25,6 +25,7 @@ function AppContent({ session, signOut }) {
   const [quizOpen, setQuizOpen] = useState(false);
   const [xpData, setXpData] = useState(null);
   const [xpVersion, setXpVersion] = useState(0);
+  const [portfolioVersion, setPortfolioVersion] = useState(0);
 
   const resetMessagesRef = useRef(null);
 
@@ -94,6 +95,18 @@ function AppContent({ session, signOut }) {
     }
   }
 
+  async function handleRenameCourse(courseId, name) {
+    const res = await fetch(`/api/courses/${courseId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (data.course) {
+      setCourses((prev) => prev.map((c) => c.id === courseId ? { ...c, name: data.course.name } : c));
+    }
+  }
+
   async function handleDeleteCourse(courseId) {
     await fetch(`/api/courses/${courseId}`, {
       method: 'DELETE',
@@ -109,8 +122,8 @@ function AppContent({ session, signOut }) {
   }
 
   function handleXpEarned() {
-    // Bump version to re-fetch XP after quiz or message
     setXpVersion((v) => v + 1);
+    setPortfolioVersion((v) => v + 1);
   }
 
   const hasUploads = uploadedFiles.length > 0;
@@ -151,6 +164,7 @@ function AppContent({ session, signOut }) {
             onSelect={(id) => setActiveCourseId(id)}
             onCreate={handleCreateCourse}
             onDelete={handleDeleteCourse}
+            onRename={handleRenameCourse}
           />
         </div>
 
@@ -252,6 +266,7 @@ function AppContent({ session, signOut }) {
               </div>
             ) : activeCourseId ? (
               <FileUpload
+                key={activeCourseId}
                 courseId={activeCourseId}
                 onFilesIngested={handleFilesIngested}
                 token={token}
@@ -291,12 +306,11 @@ function AppContent({ session, signOut }) {
           </div>
           <div style={{ overflowY: 'auto', padding: 14, flex: 1 }}>
             <KnowledgePortfolio
-              sessionId={sessionId}
               courseId={activeCourseId}
               token={token}
               topicsVersion={topicsVersion}
+              portfolioVersion={portfolioVersion}
               xpData={xpData}
-              onXpRefresh={() => setXpVersion((v) => v + 1)}
             />
           </div>
         </aside>

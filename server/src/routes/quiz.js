@@ -168,15 +168,18 @@ router.post('/quiz/check', async (req, res) => {
     };
   });
 
-  // Award XP for correct answers (fire-and-forget)
+  // Award XP + check achievements (always, even if score = 0 — quiz_taker badge needs quizCompleted)
   const xpEarned = score * XP_PER_CORRECT_QUIZ;
-  if (xpEarned > 0) {
-    awardXp(userId, jwt, xpEarned).then(() => {
-      checkAchievements(userId, jwt, { quizScore: score, quizTotal: questions.length });
-    }).catch((err) => console.error('[quiz] XP award error:', err.message));
-  }
+  const xpToAward = xpEarned > 0 ? xpEarned : 1; // award at least 1 XP so awardXp doesn't short-circuit
+  awardXp(userId, jwt, xpToAward).then(() => {
+    checkAchievements(userId, jwt, {
+      quizCompleted: true,
+      quizScore: score,
+      quizTotal: questions.length,
+    });
+  }).catch((err) => console.error('[quiz] XP award error:', err.message));
 
-  return res.json({ score, total: questions.length, xpEarned, results });
+  return res.json({ score, total: questions.length, xpEarned, results }); // xpEarned reflects correct-answer XP only
 });
 
 module.exports = router;
