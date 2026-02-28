@@ -39,49 +39,47 @@ router.post('/chat', async (req, res) => {
     // 2. Generate Socratic response
     const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt, courseId);
 
-    // 3. Award XP + check achievements (fire-and-forget — doesn't delay response)
-    awardXp(userId, jwt, XP_PER_MESSAGE).then(async (xpResult) => {
-      try {
-        const db = getAuthClient(jwt);
+    // 3. Award XP (fire-and-forget) + check achievements (awaited so we can return newBadges)
+    awardXp(userId, jwt, XP_PER_MESSAGE).catch((err) =>
+      console.error('[chat] XP award error:', err.message)
+    );
 
-        // Determine if this is the user's first-ever question (check DB, not client history)
-        const { count: interactionCount } = await db
-          .from('interactions')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId);
-        const isFirstQuestion = interactionCount === 1;
+    let newBadges = [];
+    try {
+      const db = getAuthClient(jwt);
 
-        // Count distinct files uploaded for this course
-        const { data: fileRows } = await db
-          .from('chunks')
-          .select('source_file')
-          .eq('course_fk', courseId)
-          .eq('user_id', userId);
-        const totalFiles = new Set((fileRows || []).map((r) => r.source_file)).size;
+      const { count: interactionCount } = await db
+        .from('interactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      const isFirstQuestion = interactionCount === 1;
 
-        // Count demonstrated topics in the current session
-        const { data: sessionInteractions } = await db
-          .from('interactions')
-          .select('topic_tag, resolved')
-          .eq('session_id', sessionId)
-          .eq('user_id', userId);
-        const demonstratedTopics = new Set(
-          (sessionInteractions || []).filter((r) => r.resolved).map((r) => r.topic_tag)
-        );
-        const demonstratedCount = demonstratedTopics.size;
+      const { data: fileRows } = await db
+        .from('chunks')
+        .select('source_file')
+        .eq('course_fk', courseId)
+        .eq('user_id', userId);
+      const totalFiles = new Set((fileRows || []).map((r) => r.source_file)).size;
 
-        checkAchievements(userId, jwt, {
-          firstQuestion: isFirstQuestion,
-          streak: xpResult?.streak,
-          totalFiles,
-          demonstratedCount,
-        }).catch(() => {});
-      } catch (e) {
-        console.error('[chat] Achievement context error:', e.message);
-      }
-    }).catch((err) => console.error('[chat] XP/achievement error:', err.message));
+      const { data: sessionInteractions } = await db
+        .from('interactions')
+        .select('topic_tag, resolved')
+        .eq('session_id', sessionId)
+        .eq('user_id', userId);
+      const demonstratedCount = new Set(
+        (sessionInteractions || []).filter((r) => r.resolved).map((r) => r.topic_tag)
+      ).size;
 
-    return res.json({ response, sources });
+      newBadges = await checkAchievements(userId, jwt, {
+        firstQuestion: isFirstQuestion,
+        totalFiles,
+        demonstratedCount,
+      });
+    } catch (e) {
+      console.error('[chat] Achievement check error:', e.message);
+    }
+
+    return res.json({ response, sources, newBadges });
   } catch (err) {
     console.error('Chat error:', err.message);
 

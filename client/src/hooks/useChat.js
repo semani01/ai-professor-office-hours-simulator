@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export function useChat(courseId, token, onXpEarned, conversationId) {
+export function useChat(courseId, token, onXpEarned, conversationId, conversationIdRef) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,7 +33,7 @@ export function useChat(courseId, token, onXpEarned, conversationId) {
       .finally(() => setLoadingHistory(false));
   }, [conversationId, token]);
 
-  async function sendMessage(text) {
+  async function sendMessage(text, { onNewBadges, topicContext } = {}) {
     if (!text.trim()) return;
 
     const userMsg = { role: 'user', content: text };
@@ -42,6 +42,8 @@ export function useChat(courseId, token, onXpEarned, conversationId) {
     setError(null);
 
     const history = messages.slice(-10);
+    // Build message with optional topic context prefix
+    const messageToSend = topicContext ? `[Topic: ${topicContext}] ${text}` : text;
 
     try {
       const res = await fetch('/api/chat', {
@@ -50,7 +52,7 @@ export function useChat(courseId, token, onXpEarned, conversationId) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: text, history, sessionId, courseId }),
+        body: JSON.stringify({ message: messageToSend, history, sessionId, courseId }),
       });
       const data = await res.json();
 
@@ -59,24 +61,24 @@ export function useChat(courseId, token, onXpEarned, conversationId) {
       const assistantMsg = { role: 'assistant', content: data.response, sources: data.sources || [] };
       setMessages((prev) => [...prev, assistantMsg]);
       if (onXpEarned) onXpEarned();
+      if (onNewBadges && data.newBadges?.length > 0) onNewBadges(data.newBadges);
 
-      // Persist messages to DB if we have a conversationId
-      if (conversationId) {
+      // Persist messages to DB using the ref for always-current conversationId
+      const convId = conversationIdRef ? conversationIdRef.current : conversationId;
+      if (convId) {
         const base = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
-        // Save user message first, then assistant (sequential to preserve order)
-        fetch(`/api/conversations/${conversationId}/messages`, {
+        fetch(`/api/conversations/${convId}/messages`, {
           ...base, method: 'POST',
           body: JSON.stringify({ role: 'user', content: text }),
         }).then(() =>
-          fetch(`/api/conversations/${conversationId}/messages`, {
+          fetch(`/api/conversations/${convId}/messages`, {
             ...base, method: 'POST',
             body: JSON.stringify({ role: 'assistant', content: data.response, sources: data.sources || [] }),
           })
-        ).catch(() => {}); // fire-and-forget, don't block UI
+        ).catch(() => {});
       }
     } catch (err) {
       setError(err.message);
-      // Keep the user message visible with a failed flag so they can retry
       setMessages((prev) => prev.map((m, i) =>
         i === prev.length - 1 && m.role === 'user' ? { ...m, failed: true } : m
       ));

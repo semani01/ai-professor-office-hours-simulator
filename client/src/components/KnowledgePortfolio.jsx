@@ -14,22 +14,30 @@ const TIER_CONFIG = {
   revisit:    { label: 'Revisit',      icon: '↺', colorKey: 'red' },
 };
 
-function TopicPill({ topic, theme }) {
+function TopicPill({ topic, theme, onClick }) {
   const tier = getTier(topic);
   const cfg = TIER_CONFIG[tier];
   const s = theme[cfg.colorKey];
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <div style={{
-      background: s.bg,
-      border: `1px solid ${s.border}`,
-      borderRadius: 8,
-      padding: '7px 10px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 8,
-    }}>
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered ? s.border : s.bg,
+        border: `1px solid ${hovered ? s.dot : s.border}`,
+        borderRadius: 8,
+        padding: '7px 10px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
         <span style={{
           width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
@@ -40,12 +48,12 @@ function TopicPill({ topic, theme }) {
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>{topic.tag}</span>
       </div>
-      <span style={{
-        fontSize: 10, color: s.meta, flexShrink: 0,
-        opacity: 0.8,
-      }}>
-        {topic.exchanges}q{topic.hintsNeeded > 0 ? ` · ${topic.hintsNeeded}h` : ''}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <span style={{ fontSize: 10, color: s.meta, opacity: 0.8 }}>
+          {topic.exchanges}q{topic.hintsNeeded > 0 ? ` · ${topic.hintsNeeded}h` : ''}
+        </span>
+        {hovered && <span style={{ fontSize: 10, color: s.dot }}>→</span>}
+      </div>
     </div>
   );
 }
@@ -75,7 +83,7 @@ function ProgressRing({ value, max, color, size = 48 }) {
   );
 }
 
-export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVersion, xpData }) {
+export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVersion, xpData, onTopicClick }) {
   const { theme } = useTheme();
   const [topics, setTopics] = useState([]);
   const [hasCourseTopic, setHasCourseTopic] = useState(null);
@@ -98,29 +106,34 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
       .catch(() => setHasCourseTopic(false));
   }, [courseId, token, topicsVersion]);
 
-  // Fetch course-level summary — all sessions, persists across page refreshes
-  async function fetchSummary() {
+  // Fetch course-level summary — updates topics state silently (no loading flash)
+  async function fetchSummary({ showLoading = false } = {}) {
     if (!courseId || !token) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const res = await fetch(`/api/course/${courseId}/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.topics) setTopics(data.topics);
+      if (data.topics) {
+        setTopics((prev) => {
+          const next = data.topics;
+          return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+        });
+      }
     } catch { /* non-critical */ }
-    finally { setLoading(false); }
+    finally { if (showLoading) setLoading(false); }
   }
 
-  // Eager refresh when a new message or quiz completes
+  // Eager refresh when a new message or quiz completes (silent — no spinner)
   useEffect(() => {
     if (portfolioVersion > 0) fetchSummary();
   }, [portfolioVersion]);
 
   useEffect(() => {
     if (!courseId || !token) return;
-    fetchSummary();
-    const interval = setInterval(fetchSummary, 15_000);
+    fetchSummary({ showLoading: true }); // first load shows skeleton
+    const interval = setInterval(() => fetchSummary(), 15_000); // polls silently
     return () => clearInterval(interval);
   }, [courseId, token]);
 
@@ -209,11 +222,13 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
 
       {filtered.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {loading && (
-            <div style={{ fontSize: 10, color: theme.textFaint, textAlign: 'right', marginBottom: 2 }}>updating…</div>
-          )}
           {filtered.map((topic, i) => (
-            <TopicPill key={i} topic={topic} theme={theme} />
+            <TopicPill
+              key={topic.tag || i}
+              topic={topic}
+              theme={theme}
+              onClick={() => onTopicClick && onTopicClick(topic)}
+            />
           ))}
         </div>
       )}

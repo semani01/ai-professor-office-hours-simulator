@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 /**
@@ -15,6 +15,8 @@ export function AchievementsButton({ token, newBadgeKeys = [] }) {
   const [seen, setSeen] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem('seen-badges') || '[]'); } catch { return []; }
   });
+  const [toast, setToast] = useState(null); // { icon, name }
+  const toastTimer = useRef(null);
 
   useEffect(() => {
     if (!token) return;
@@ -26,6 +28,32 @@ export function AchievementsButton({ token, newBadgeKeys = [] }) {
       })
       .catch(() => {});
   }, [token, newBadgeKeys.length]);
+
+  // Show toast for newly earned badges
+  const prevNewLen = useRef(0);
+  useEffect(() => {
+    if (newBadgeKeys.length <= prevNewLen.current) { prevNewLen.current = newBadgeKeys.length; return; }
+    const latestKey = newBadgeKeys[newBadgeKeys.length - 1];
+    const ALL_BADGE_DEFS = {
+      hot_streak:      { icon: '🔥', name: 'Hot Streak' },
+      sharpshooter:    { icon: '🎯', name: 'Sharpshooter' },
+      bookworm:        { icon: '📚', name: 'Bookworm' },
+      deep_thinker:    { icon: '🧠', name: 'Deep Thinker' },
+      course_champion: { icon: '🏆', name: 'Course Champion' },
+      speed_learner:   { icon: '⚡', name: 'Speed Learner' },
+      night_owl:       { icon: '🌙', name: 'Night Owl' },
+      early_bird:      { icon: '☀️', name: 'Early Bird' },
+      first_question:  { icon: '💬', name: 'First Step' },
+      quiz_taker:      { icon: '📝', name: 'Quiz Taker' },
+    };
+    const def = ALL_BADGE_DEFS[latestKey];
+    if (def) {
+      setToast(def);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setToast(null), 3500);
+    }
+    prevNewLen.current = newBadgeKeys.length;
+  }, [newBadgeKeys.length]);
 
   const unseenNew = newBadgeKeys.filter((k) => !seen.includes(k));
 
@@ -64,6 +92,44 @@ export function AchievementsButton({ token, newBadgeKeys = [] }) {
           }} />
         )}
       </button>
+
+      {/* Achievement unlock toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 200, pointerEvents: 'none',
+          animation: 'achieveSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards, achieveFadeOut 0.4s ease 3.1s forwards',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+            border: '1px solid #6366f1',
+            borderRadius: 14, padding: '12px 20px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
+            minWidth: 240,
+          }}>
+            <span style={{ fontSize: 28 }}>{toast.icon}</span>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Achievement Unlocked!
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginTop: 1 }}>
+                {toast.name}
+              </div>
+            </div>
+          </div>
+          <style>{`
+            @keyframes achieveSlideIn {
+              from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+              to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+            }
+            @keyframes achieveFadeOut {
+              from { opacity: 1; }
+              to   { opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
 
       {/* Modal */}
       {open && (

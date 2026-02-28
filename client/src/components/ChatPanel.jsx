@@ -25,8 +25,8 @@ function TypingDots({ theme }) {
   );
 }
 
-export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef, onXpEarned, conversationId }) {
-  const { messages, loading, loadingHistory, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned, conversationId);
+export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef, onXpEarned, conversationId, conversationIdRef, onNewBadges }) {
+  const { messages, loading, loadingHistory, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned, conversationId, conversationIdRef);
   const { theme } = useTheme();
 
   const [input, setInput] = useState('');
@@ -56,7 +56,7 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
     if (textareaRef.current) {
       textareaRef.current.style.height = '24px';
     }
-    sendMessage(text);
+    sendMessage(text, { onNewBadges });
   }
 
   function handleKeyDown(e) {

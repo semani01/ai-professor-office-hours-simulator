@@ -11,6 +11,7 @@ import { XpBar } from './components/XpBar';
 import { AchievementsButton } from './components/Achievements';
 import { QuizMode } from './components/QuizMode';
 import { ConversationList } from './components/ConversationList';
+import { TopicRoom } from './components/TopicRoom';
 
 function AppContent({ session, signOut }) {
   const token = session?.access_token;
@@ -28,8 +29,14 @@ function AppContent({ session, signOut }) {
   const [xpVersion, setXpVersion] = useState(0);
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [activeConversationId, setActiveConversationId] = useState(null);
+  const [activeTopic, setActiveTopic] = useState(null);
+  const [newBadgeKeys, setNewBadgeKeys] = useState([]);
+  const conversationIdRef = useRef(null);
 
   const resetMessagesRef = useRef(null);
+
+  // Keep ref in sync with state for synchronous access inside sendMessage closure
+  useEffect(() => { conversationIdRef.current = activeConversationId; }, [activeConversationId]);
 
   // Load courses on mount
   function loadCourses() {
@@ -64,12 +71,13 @@ function AppContent({ session, signOut }) {
       .catch(() => {});
   }, [token, xpVersion]);
 
-  // When active course changes, reset files + session + conversation
+  // When active course changes, reset files + session + conversation + topic room
   useEffect(() => {
     setUploadedFiles([]);
     setSessionId(null);
     setTopicsVersion(0);
     setActiveConversationId(null);
+    setActiveTopic(null);
     resetMessagesRef.current?.();
   }, [activeCourseId]);
 
@@ -202,7 +210,7 @@ function AppContent({ session, signOut }) {
           <XpBar xpData={xpData} />
 
           {/* Achievements */}
-          <AchievementsButton token={token} />
+          <AchievementsButton token={token} newBadgeKeys={newBadgeKeys} />
 
           {/* Divider */}
           <div style={{ width: 1, height: 18, background: theme.border, flexShrink: 0 }} />
@@ -303,18 +311,30 @@ function AppContent({ session, signOut }) {
           </div>
         </aside>
 
-        {/* Center panel — Chat (flex 1) */}
+        {/* Center panel — Chat or Topic Room (flex 1) */}
         <section style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-          <ChatPanel
-            courseId={activeCourseId}
-            uploadedFiles={uploadedFiles}
-            hasUploads={hasUploads}
-            onSessionId={setSessionId}
-            token={token}
-            onResetRef={resetMessagesRef}
-            onXpEarned={handleXpEarned}
-            conversationId={activeConversationId}
-          />
+          {activeTopic ? (
+            <TopicRoom
+              topic={activeTopic}
+              courseId={activeCourseId}
+              token={token}
+              onBack={() => setActiveTopic(null)}
+              onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
+            />
+          ) : (
+            <ChatPanel
+              courseId={activeCourseId}
+              uploadedFiles={uploadedFiles}
+              hasUploads={hasUploads}
+              onSessionId={setSessionId}
+              token={token}
+              onResetRef={resetMessagesRef}
+              onXpEarned={handleXpEarned}
+              conversationId={activeConversationId}
+              conversationIdRef={conversationIdRef}
+              onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
+            />
+          )}
         </section>
 
         {/* Right panel — Knowledge Portfolio (260px) */}
@@ -335,6 +355,7 @@ function AppContent({ session, signOut }) {
               topicsVersion={topicsVersion}
               portfolioVersion={portfolioVersion}
               xpData={xpData}
+              onTopicClick={setActiveTopic}
             />
           </div>
         </aside>
