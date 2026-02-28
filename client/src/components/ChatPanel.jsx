@@ -25,8 +25,8 @@ function TypingDots({ theme }) {
   );
 }
 
-export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef, onXpEarned }) {
-  const { messages, loading, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned);
+export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef, onXpEarned, conversationId }) {
+  const { messages, loading, loadingHistory, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned, conversationId);
   const { theme } = useTheme();
 
   const [input, setInput] = useState('');
@@ -93,7 +93,7 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
 
       {/* Message thread */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {messages.length === 0 && !loading && (
+        {messages.length === 0 && !loading && !loadingHistory && (
           <div style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexDirection: 'column', gap: 12, color: theme.textFaint, paddingTop: 80,

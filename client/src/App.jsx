@@ -10,6 +10,7 @@ import { FileViewerModal } from './components/FileViewerModal';
 import { XpBar } from './components/XpBar';
 import { AchievementsButton } from './components/Achievements';
 import { QuizMode } from './components/QuizMode';
+import { ConversationList } from './components/ConversationList';
 
 function AppContent({ session, signOut }) {
   const token = session?.access_token;
@@ -26,6 +27,7 @@ function AppContent({ session, signOut }) {
   const [xpData, setXpData] = useState(null);
   const [xpVersion, setXpVersion] = useState(0);
   const [portfolioVersion, setPortfolioVersion] = useState(0);
+  const [activeConversationId, setActiveConversationId] = useState(null);
 
   const resetMessagesRef = useRef(null);
 
@@ -62,11 +64,12 @@ function AppContent({ session, signOut }) {
       .catch(() => {});
   }, [token, xpVersion]);
 
-  // When active course changes, reset files + session
+  // When active course changes, reset files + session + conversation
   useEffect(() => {
     setUploadedFiles([]);
     setSessionId(null);
     setTopicsVersion(0);
+    setActiveConversationId(null);
     resetMessagesRef.current?.();
   }, [activeCourseId]);
 
@@ -124,6 +127,11 @@ function AppContent({ session, signOut }) {
   function handleXpEarned() {
     setXpVersion((v) => v + 1);
     setPortfolioVersion((v) => v + 1);
+  }
+
+  function handleConversationDeleted() {
+    setActiveConversationId(null);
+    resetMessagesRef.current?.();
   }
 
   const hasUploads = uploadedFiles.length > 0;
@@ -245,6 +253,21 @@ function AppContent({ session, signOut }) {
               {activeCourse ? activeCourse.name : 'Course Materials'}
             </div>
           </div>
+
+          {/* Conversation list */}
+          {activeCourseId && (
+            <div style={{ borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
+              <ConversationList
+                courseId={activeCourseId}
+                token={token}
+                activeConversationId={activeConversationId}
+                onSelect={setActiveConversationId}
+                onCreate={setActiveConversationId}
+                onDelete={handleConversationDeleted}
+              />
+            </div>
+          )}
+
           <div style={{ overflowY: 'auto', padding: 14, flex: 1 }}>
             {coursesError ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, paddingTop: 24 }}>
@@ -290,6 +313,7 @@ function AppContent({ session, signOut }) {
             token={token}
             onResetRef={resetMessagesRef}
             onXpEarned={handleXpEarned}
+            conversationId={activeConversationId}
           />
         </section>
 

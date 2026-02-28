@@ -11,6 +11,7 @@ const filesRouter = require('./routes/files');
 const { router: xpRouter } = require('./routes/xp');
 const quizRouter = require('./routes/quiz');
 const { router: achievementsRouter } = require('./routes/achievements');
+const conversationsRouter = require('./routes/conversations');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,6 +32,7 @@ app.use('/api', filesRouter);
 app.use('/api', xpRouter);
 app.use('/api', quizRouter);
 app.use('/api', achievementsRouter);
+app.use('/api', conversationsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
