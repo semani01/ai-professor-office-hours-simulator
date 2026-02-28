@@ -25,8 +25,8 @@ function TypingDots({ theme }) {
   );
 }
 
-export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef }) {
-  const { messages, loading, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token);
+export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef, onXpEarned }) {
+  const { messages, loading, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned);
   const { theme } = useTheme();
 
   const [input, setInput] = useState('');

@@ -35,7 +35,7 @@ router.post('/chat', async (req, res) => {
     const chunks = await retrieveChunks(message, course, userId, jwt);
 
     // 2. Generate Socratic response
-    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt);
+    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt, course);
 
     // 3. Award XP + check achievements (fire-and-forget — doesn't delay response)
     const isFirstQuestion = !history || history.length === 0;

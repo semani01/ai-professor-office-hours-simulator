@@ -175,7 +175,7 @@ async function countPriorExchanges(sessionId, topicTag, userId, jwt) {
  * @param {string} jwt - Supabase access token
  * @returns {Promise<{ response: string, sources: { sourceFile, sourceType, weekNumber, excerpt }[] }>}
  */
-async function generateResponse(message, history, chunks, sessionId, userId, jwt) {
+async function generateResponse(message, history, chunks, sessionId, userId, jwt, courseId) {
   const contextBlock = formatChunks(chunks);
 
   const recentHistory = (history || [])
@@ -213,7 +213,6 @@ async function generateResponse(message, history, chunks, sessionId, userId, jwt
 
   // Log interaction non-blocking — does not affect the response
   const resolved = isResolved(message);
-  const courseId = chunks[0]?.course_fk || null;
 
   if (userId && jwt && courseId) {
     (async () => {

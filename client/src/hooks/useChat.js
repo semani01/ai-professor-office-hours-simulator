@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 
-export function useChat(courseId, token) {
+export function useChat(courseId, token, onXpEarned) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,6 +32,7 @@ export function useChat(courseId, token) {
 
       const assistantMsg = { role: 'assistant', content: data.response, sources: data.sources || [] };
       setMessages((prev) => [...prev, assistantMsg]);
+      if (onXpEarned) onXpEarned();
     } catch (err) {
       setError(err.message);
       // Keep the user message visible with a failed flag so they can retry
