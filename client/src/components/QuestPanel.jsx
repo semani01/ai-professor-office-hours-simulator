@@ -37,7 +37,7 @@ export function QuestPanel({ quests, onQuestAction, onStatusChange, onDelete }) 
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            🗺 Quests
+            🛣️ Quests
           </span>
           {active.length > 0 && (
             <span style={{

@@ -26,9 +26,9 @@ router.get('/conversations', async (req, res) => {
     .eq('course_fk', courseId)
     .order('updated_at', { ascending: false });
 
-  // By default hide internal topic-room conversations; pass includeHidden=true to see all
+  // By default hide internal conversations (topic, session, etc.); pass includeHidden=true to see all
   if (req.query.includeHidden !== 'true') {
-    query.not('title', 'like', '__topic__%');
+    query.not('title', 'like', '__%');  // hides all internal conversations starting with __
   }
 
   const { data, error } = await query;

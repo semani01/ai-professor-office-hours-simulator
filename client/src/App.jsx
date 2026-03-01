@@ -22,6 +22,7 @@ import { SessionSummaryPanel } from './components/SessionSummaryPanel';
 import { WelcomeBackPanel } from './components/WelcomeBackPanel';
 import { QuestPanel } from './components/QuestPanel';
 import { SideQuestPanel } from './components/SideQuestPanel';
+import { FocusTimer } from './components/FocusTimer';
 
 const INTENT_LABELS = {
   general: 'General Study',
@@ -250,7 +251,7 @@ function AppContent({ session, signOut }) {
       const res = await fetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ courseId: activeCourseId, title: `📖 ${INTENT_LABELS[sess.intent] || 'Study'} Session` }),
+        body: JSON.stringify({ courseId: activeCourseId, title: `__session__${sess.id}` }),
       });
       const data = await res.json();
       if (data.conversation) {
@@ -304,6 +305,8 @@ function AppContent({ session, signOut }) {
         setActiveTopic(override
           ? { tag: td.topicTag, manualTier: override }
           : { tag: td.topicTag });
+        // Refresh portfolio to reflect topic interaction
+        handleXpEarned();
       }
     } else if (quest.quest_type === 'quiz') {
       setQuizOpen(true);
@@ -383,6 +386,9 @@ function AppContent({ session, signOut }) {
               <span>📖</span><span>Study Session</span>
             </button>
           )}
+
+          {/* Focus Timer — always available */}
+          <FocusTimer />
 
           {/* Quiz Me */}
           <button
