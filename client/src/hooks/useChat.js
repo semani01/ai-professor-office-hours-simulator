@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export function useChat(courseId, token, onXpEarned, conversationId, conversationIdRef) {
+export function useChat(courseId, token, onXpEarned, conversationId, conversationIdRef, studySessionId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -52,7 +52,7 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: messageToSend, history, sessionId, courseId }),
+        body: JSON.stringify({ message: messageToSend, history, sessionId, courseId, studySessionId: studySessionId || null }),
       });
       const data = await res.json();
 
