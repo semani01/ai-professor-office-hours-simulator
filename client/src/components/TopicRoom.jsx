@@ -359,13 +359,24 @@ const ROOT_W = 140;     // root node width
 const H_GAP  = 56;      // horizontal gap between levels
 const V_GAP  = 10;      // vertical gap between sibling nodes
 
-function MindMapTab({ mindMap, tag, loading }) {
+function MindMapTab({ mindMap, tag, loading, onRefresh }) {
   const { theme } = useTheme();
   const [collapsed, setCollapsed] = useState({});  // key = branch index
 
   if (loading) return <SkeletonCard lines={5} />;
   if (!mindMap || mindMap.length === 0) return (
-    <div style={{ textAlign: 'center', color: theme.textMuted, fontSize: 13, padding: '24px 0' }}>No mind map data yet.</div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '32px 16px' }}>
+      <div style={{ fontSize: 36 }}>🗺</div>
+      <div style={{ fontSize: 13, color: theme.textMuted, textAlign: 'center' }}>No mind map yet — reload the topic to generate one.</div>
+      <button
+        onClick={onRefresh}
+        style={{
+          padding: '8px 20px', borderRadius: 10, border: 'none',
+          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+        }}
+      >↺ Reload Topic</button>
+    </div>
   );
 
   function toggleBranch(i) {
@@ -793,6 +804,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
             loading={loadingContent}
             mindMap={content?.mindMap}
             tag={topic.tag}
+            onRefresh={() => loadContent()}
           />
         )}
       </div>
