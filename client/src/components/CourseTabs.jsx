@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
-export function CourseTabs({ courses, activeCourseId, onSelect, onCreate, onDelete, onRename }) {
+export function CourseTabs({ courses, activeCourseId, onSelect, onCreate, onDelete, onRename, onDeleteRequest }) {
   const { theme } = useTheme();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -127,7 +127,7 @@ export function CourseTabs({ courses, activeCourseId, onSelect, onCreate, onDele
             {/* Delete button */}
             {!isEditing && (
               <button
-                onClick={(e) => { e.stopPropagation(); onDelete(course.id); }}
+                onClick={(e) => { e.stopPropagation(); (onDeleteRequest || onDelete)(course.id, course.name); }}
                 title="Delete course"
                 style={{
                   background: 'none', border: 'none', padding: 0,

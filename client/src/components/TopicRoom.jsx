@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTheme } from '../context/ThemeContext';
+import { ElectronIcon } from './ElectronIcon';
 
 function getTier(topic) {
   if (topic.manualTier) return topic.manualTier;
@@ -787,7 +788,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
                 {chatMessages.map((msg, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
                     {msg.role === 'assistant' && (
-                      <div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, marginRight: 8, marginTop: 2 }}>🎓</div>
+                      <div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, background: 'linear-gradient(135deg,#1e1b4b,#312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 8, marginTop: 2, border: '1px solid #4c1d95' }}><ElectronIcon size={15} color="#a78bfa" /></div>
                     )}
                     <div style={{
                       maxWidth: '80%', padding: '10px 14px',
@@ -805,7 +806,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
                 ))}
                 {chatLoading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🎓</div>
+                    <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#1e1b4b,#312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #4c1d95' }}><ElectronIcon size={15} color="#a78bfa" /></div>
                     <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: '16px 16px 16px 4px', padding: '10px 14px', display: 'flex', gap: 4, alignItems: 'center' }}>
                       {[0, 150, 300].map((d) => <span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.textFaint, animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${d}ms` }} />)}
                     </div>
