@@ -41,5 +41,5 @@ export function useUpload() {
     setError(null);
   }
 
-  return { files, uploading, error, uploadFiles, resetFiles };
+  return { files, uploading, error, uploadFiles, resetFiles, setFiles };
 }

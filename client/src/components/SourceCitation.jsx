@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 const SOURCE_TYPE_LABELS = {
   lecture: 'Lecture', notes: 'Notes', assignment: 'Assignment',
@@ -6,6 +7,7 @@ const SOURCE_TYPE_LABELS = {
 };
 
 export function SourceCitation({ sources }) {
+  const { theme } = useTheme();
   const [expanded, setExpanded] = useState(null);
   if (!sources || sources.length === 0) return null;
 
@@ -30,12 +32,12 @@ export function SourceCitation({ sources }) {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
-                background: '#1e1b4b', color: '#818cf8',
-                border: '1px solid #312e81', cursor: 'pointer',
+                background: theme.accentBg, color: theme.accentLight,
+                border: `1px solid ${theme.accentBorder}`, cursor: 'pointer',
                 transition: 'all 0.1s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#312e81'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#1e1b4b'}
+              onMouseEnter={(e) => e.currentTarget.style.background = theme.accentBorder}
+              onMouseLeave={(e) => e.currentTarget.style.background = theme.accentBg}
             >
               <span style={{ fontSize: 10 }}>📄</span>
               <span>{tag}</span>
@@ -45,13 +47,13 @@ export function SourceCitation({ sources }) {
               <div style={{
                 position: 'absolute', bottom: '100%', left: 0, marginBottom: 6,
                 zIndex: 50, width: 280, padding: '10px 12px',
-                background: '#1e293b', border: '1px solid #334155',
+                background: theme.bgCard, border: `1px solid ${theme.borderStrong}`,
                 borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
               }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: '#e2e8f0', margin: '0 0 4px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: theme.textPrimary, margin: '0 0 4px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {source.sourceFile}
                 </p>
-                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
+                <p style={{ fontSize: 11, color: theme.textSecondary, margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
                   "{source.excerpt}..."
                 </p>
               </div>

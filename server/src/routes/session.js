@@ -57,4 +57,52 @@ router.get('/session/:sessionId/summary', async (req, res) => {
   return res.json({ topics });
 });
 
+/**
+ * GET /api/course/:courseId/summary
+ *
+ * Returns a topic-level summary across ALL sessions for a course.
+ * Used by Knowledge Portfolio so progress persists across page refreshes.
+ * Same aggregation logic as session summary but scoped to course_fk.
+ */
+router.get('/course/:courseId/summary', async (req, res) => {
+  const { courseId } = req.params;
+  if (!courseId) return res.status(400).json({ error: 'courseId is required' });
+
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
+  const db = getAuthClient(jwt);
+  const { data, error } = await db
+    .from('interactions')
+    .select('topic_tag, hints_needed, resolved')
+    .eq('course_fk', courseId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Course summary error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch course summary' });
+  }
+
+  if (!data || data.length === 0) {
+    return res.json({ topics: [] });
+  }
+
+  const topicMap = {};
+  for (const row of data) {
+    const tag = row.topic_tag || 'General';
+    if (!topicMap[tag]) {
+      topicMap[tag] = { tag, hintsNeeded: 0, resolved: false, exchanges: 0 };
+    }
+    topicMap[tag].exchanges += 1;
+    if (row.hints_needed > topicMap[tag].hintsNeeded) {
+      topicMap[tag].hintsNeeded = row.hints_needed;
+    }
+    if (row.resolved) {
+      topicMap[tag].resolved = true;
+    }
+  }
+
+  return res.json({ topics: Object.values(topicMap) });
+});
+
 module.exports = router;

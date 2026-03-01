@@ -198,10 +198,46 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 ---
 
-## Phase 6 — Deployment
+## Phase 5a — Polish & Dark Mode ✅ Done
+**Goal:** UI polish, bug fixes, dark/light mode toggle.
+
+**Branch:** `feat/phase-5a-polish` (branched off `feat/phase-5-features`)
+
+- [x] Dark/light mode toggle — `ThemeContext.jsx` with 25+ color tokens; ☀️/🌙 button in header
+- [x] All components theme-aware: AuthGate, ChatPanel, FileUpload, FileViewerModal, WeakSpotDashboard, SourceCitation, CourseTabs
+- [x] Auth crash fix — `useAuth()` called only in `App.jsx`; props passed down
+- [x] Upload race condition fix — `forCourseId` guard in `handleFilesIngested`
+- [x] PDF viewer tip strip, DOCX paragraph rendering, CourseTabs spinner, FileUpload input reset
+- [x] Source citation deduplication by `sourceFile + weekNumber`
+- [x] Failed message retry UI in ChatPanel
+
+---
+
+## Phase 6 — Gamification, Knowledge Portfolio & UI Redesign ✅ Done
+**Goal:** XP system, quiz mode, achievement badges, streak calendar, rename WeakSpotDashboard → KnowledgePortfolio, 3-column layout.
+
+**Branch:** `feat/phase-6-gamify` (branched off `feat/phase-5a-polish`)
+
+- [x] **Socratic fix** — rewrote SYSTEM_PROMPT rules 2 + 5 in `server/src/lib/claude.js`; explicit ❌/✅ examples; AI no longer quotes material verbatim
+- [x] **Supabase tables** — `user_xp` (user_id PK, total_xp, current_streak, last_study_date) + `user_achievements` (user_id, badge_key, unlocked_at, UNIQUE)
+- [x] **`server/src/routes/xp.js`** — `GET /api/xp` returns totalXp, level, xpToNextLevel, currentStreak, studyDates; `awardXp()` exported function with streak multiplier (1x/1.5x/2x)
+- [x] **`server/src/routes/quiz.js`** — `POST /api/quiz/generate` retrieves diverse chunks + Claude generates 4 MCQs; `POST /api/quiz/check` scores answers + awards XP
+- [x] **`server/src/routes/achievements.js`** — `GET /api/achievements` returns all badges + unlock status; `checkAchievements()` exported for server-side badge evaluation (10 badge types)
+- [x] **`server/src/routes/chat.js`** — fire-and-forget XP award + achievement check after each message
+- [x] **`server/src/index.js`** — xp, quiz, achievements routes registered
+- [x] **`client/src/components/KnowledgePortfolio.jsx`** — replaces WeakSpotDashboard; 3 tier rings (Mastered/In Progress/Revisit); clickable filter; StreakCalendar at bottom
+- [x] **`client/src/components/StreakCalendar.jsx`** — GitHub-style 5-week contribution grid
+- [x] **`client/src/components/XpBar.jsx`** — compact header widget: Level badge + XP progress bar + streak flame
+- [x] **`client/src/components/Achievements.jsx`** — AchievementsButton: trophy icon + modal with badge grid (locked=grayscale, unlocked=glow)
+- [x] **`client/src/components/QuizMode.jsx`** — full-screen quiz overlay; 30s timer; reveal with color feedback; results screen with XP earned
+- [x] **`client/src/App.jsx`** — 3-column layout (Sources 240px | Chat flex | Portfolio 260px); header: ⚡ Quiz Me + XpBar + 🏆 Achievements + theme toggle + signout
+
+---
+
+## Phase 7 — Deployment
 **Goal:** Shareable live URL for the demo video.
 
-**Branch:** `feat/phase-6-deployment` (branch off `main` before starting)
+**Branch:** `feat/phase-7-deployment` (branch off `main` before starting)
 
 - [ ] Frontend → Vercel:
   - [ ] Connect GitHub repo
@@ -217,10 +253,10 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 - [ ] Smoke test live deployment end-to-end:
   - [ ] Upload lecture PDF
   - [ ] Ask question → confirm Socratic response with source citation
-  - [ ] Confirm weak spot dashboard updates
+  - [ ] Confirm Knowledge Portfolio updates, XP bar shows, quiz works
 - [ ] Update `README.md` with live demo URL
-- [ ] Commit and push to `feat/phase-6-deployment`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 6 log entry (what was built, live URL, problems)
+- [ ] Commit and push to `feat/phase-7-deployment`; open PR into `main`; merge
+- [ ] Update `IMPLEMENTATION.md` — Phase 7 log entry (what was built, live URL, problems)
 
 **Exit condition:** Live Vercel URL works end-to-end. Full ingestion + chat + dashboard flow confirmed on live deployment. PR merged into `main`.
 
@@ -255,7 +291,9 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | 3 — Frontend Core | ✅ Done |
 | 4 — Weak Spot Dashboard | ✅ Done |
 | 5 — Auth, Multi-Course, File Viewer | ✅ Done |
-| 6 — Deployment | ⬜ Not started |
-| 7 — Demo + Submission | ⬜ Not started |
+| 5a — Polish & Dark Mode | ✅ Done |
+| 6 — Gamification, Knowledge Portfolio & UI Redesign | ✅ Done |
+| 7 — Deployment | ⬜ Not started |
+| 8 — Demo + Submission | ⬜ Not started |
 
 Update the status column as you go: ⬜ Not started → 🔄 In progress → ✅ Done

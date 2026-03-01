@@ -1,7 +1,9 @@
 const express = require('express');
 const { retrieveChunks } = require('../lib/retrieval');
 const { generateResponse } = require('../lib/claude');
-const { extractJwt, getUserId } = require('../db/supabaseWithAuth');
+const { getAuthClient, extractJwt, getUserId } = require('../db/supabaseWithAuth');
+const { awardXp, XP_PER_MESSAGE } = require('./xp');
+const { checkAchievements } = require('./achievements');
 
 const router = express.Router();
 
@@ -20,6 +22,9 @@ router.post('/chat', async (req, res) => {
   if (!sessionId) {
     return res.status(400).json({ error: 'sessionId is required.' });
   }
+  if (!courseId) {
+    return res.status(400).json({ error: 'courseId is required.' });
+  }
 
   const jwt = extractJwt(req);
   if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
@@ -27,15 +32,54 @@ router.post('/chat', async (req, res) => {
   const userId = await getUserId(jwt);
   if (!userId) return res.status(401).json({ error: 'Could not identify user' });
 
-  const course = courseId || 'default';
   try {
     // 1. Retrieve relevant chunks (scoped to user)
-    const chunks = await retrieveChunks(message, course, userId, jwt);
+    const chunks = await retrieveChunks(message, courseId, userId, jwt);
 
     // 2. Generate Socratic response
-    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt);
+    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt, courseId);
 
-    return res.json({ response, sources });
+    // 3. Award XP (fire-and-forget) + check achievements (awaited so we can return newBadges)
+    awardXp(userId, jwt, XP_PER_MESSAGE).catch((err) =>
+      console.error('[chat] XP award error:', err.message)
+    );
+
+    let newBadges = [];
+    try {
+      const db = getAuthClient(jwt);
+
+      const { count: interactionCount } = await db
+        .from('interactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      const isFirstQuestion = interactionCount === 1;
+
+      const { data: fileRows } = await db
+        .from('chunks')
+        .select('source_file')
+        .eq('course_fk', courseId)
+        .eq('user_id', userId);
+      const totalFiles = new Set((fileRows || []).map((r) => r.source_file)).size;
+
+      const { data: sessionInteractions } = await db
+        .from('interactions')
+        .select('topic_tag, resolved')
+        .eq('session_id', sessionId)
+        .eq('user_id', userId);
+      const demonstratedCount = new Set(
+        (sessionInteractions || []).filter((r) => r.resolved).map((r) => r.topic_tag)
+      ).size;
+
+      newBadges = await checkAchievements(userId, jwt, {
+        firstQuestion: isFirstQuestion,
+        totalFiles,
+        demonstratedCount,
+      });
+    } catch (e) {
+      console.error('[chat] Achievement check error:', e.message);
+    }
+
+    return res.json({ response, sources, newBadges });
   } catch (err) {
     console.error('Chat error:', err.message);
 

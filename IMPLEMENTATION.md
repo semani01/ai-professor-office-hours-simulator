@@ -204,23 +204,76 @@ Keep entries concise. This is a development journal, not documentation.
 - ESLint "declared but never used" warnings surfaced several prop/state wiring gaps in `FileUpload.jsx` (token, onFileClick, hoveredIdx) and `index.js` (route registrations) — caught and fixed before commit
 
 **Next:**
-- Phase 6 — Deployment (Vercel + Render)
+- Phase 5a — Polish & dark mode toggle
 
 ---
 
-### [Date] — Phase 6: Deployment
+### 2026-02-27 — Phase 5a: Polish & Dark Mode
 
 **Built:**
-- 
+- `ThemeContext.jsx` — 25+ color token system (dark + light themes); `isDark` flag; `localStorage` persistence; CSS variables on `:root`
+- Dark/light toggle (☀️/🌙) in header; all components updated to use `theme.*` tokens
+- Auth crash fix: `useAuth()` called only in `App.jsx`, props threaded down to avoid race condition on email confirmation redirect
+- Upload race condition fix: `forCourseId` guard prevents stale callbacks from prior courses
+- PDF viewer tip strip, DOCX paragraph rendering improvements, CourseTabs loading spinner, FileUpload input reset after upload
+- Source citation deduplication by `sourceFile + weekNumber`
+- Failed message retry UI in ChatPanel
 
 **Decisions:**
-- 
+- Theme passed via React context (not CSS-only) — gives components access to computed colors for inline styles and conditional logic
+- Tier colors (`green`, `yellow`, `red`) embedded as nested objects on theme object for WeakSpotDashboard compatibility
 
 **Problems:**
-- 
+- `useAuth()` called in both `App.jsx` and `AuthGate.jsx` caused a blank screen on email confirmation redirects — fixed by passing session/loading as props
+
+**Next:**
+- Phase 6 — Gamification + Knowledge Portfolio + UI Redesign
+
+---
+
+### 2026-02-27 — Phase 6: Gamification, Knowledge Portfolio & UI Redesign
+
+**Built:**
+- **Socratic fix**: Rewrote SYSTEM_PROMPT rules 2 + 5 in `claude.js` with explicit ❌/✅ examples. AI now points to WHERE to find information instead of quoting it verbatim — addresses core product differentiation from NotebookLM
+- **`server/src/routes/xp.js`**: GET /api/xp (totalXp, level, xpToNextLevel, currentStreak, studyDates); `awardXp()` with streak multiplier (1x/1.5x/2x for 1/2/3+ consecutive days); upsert into `user_xp`
+- **`server/src/routes/quiz.js`**: POST /api/quiz/generate — `getDiverseChunks()` samples 2 chunks per week for variety; Claude generates 4 MCQs testing understanding not memorization. POST /api/quiz/check — scores + awards XP
+- **`server/src/routes/achievements.js`**: 10 badge types (hot_streak, sharpshooter, bookworm, deep_thinker, course_champion, speed_learner, night_owl, early_bird, first_question, quiz_taker); server-side evaluation from chat + quiz routes
+- **`chat.js`**: fire-and-forget XP award + achievement check after every message
+- **`KnowledgePortfolio.jsx`**: replaces WeakSpotDashboard; SVG ProgressRing per tier; clickable filter buttons; StreakCalendar embedded at bottom
+- **`StreakCalendar.jsx`**: 5-week GitHub-style contribution grid; color intensity by question count
+- **`XpBar.jsx`**: compact header widget — Level badge + 64px progress bar + streak flame
+- **`Achievements.jsx`**: AchievementsButton with trophy icon; full modal badge grid (locked=grayscale+dim, unlocked=colored glow + date)
+- **`QuizMode.jsx`**: full-screen overlay; loading → question → reveal (color feedback + explanation) → results; 30s countdown timer per question
+- **`App.jsx`**: 3-column layout (Sources 240px | Chat flex | Portfolio 260px); header redesigned with Quiz Me button + XpBar + Achievements trophy; XP re-fetched on quiz close and after messages
+
+**Decisions:**
+- XP awarded server-side (not client-side) to prevent client cheating
+- Quiz chunks spread across weeks via `getDiverseChunks()` grouping logic — avoids all questions from same lecture
+- AchievementsButton manages its own open/close state internally — simpler than lifting state to App.jsx
+- 3-column layout uses `flex: 1` for chat center with `minWidth: 0` to prevent overflow blowout
+
+**Problems:**
+- `AchievementsButton` signature mismatch: initially passed `isOpen/onToggle/onClose` from App.jsx but component manages its own state — corrected to just pass `token`
+- Supabase `user_xp` and `user_achievements` tables must be created manually before Phase 6 features work (SQL in plan file)
+
+**Next:**
+- Phase 7 — Deployment (Vercel for client, Railway for server)
+
+---
+
+### [Date] — Phase 7: Deployment
+
+**Built:**
+-
+
+**Decisions:**
+-
+
+**Problems:**
+-
 
 **Live URL:**
-- 
+-
 
 ---
 
