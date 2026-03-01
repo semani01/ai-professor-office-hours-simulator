@@ -12,11 +12,15 @@ import { AchievementsButton } from './components/Achievements';
 import { QuizMode } from './components/QuizMode';
 import { ConversationList } from './components/ConversationList';
 import { TopicRoom } from './components/TopicRoom';
+import { ElectronIcon } from './components/ElectronIcon';
+import { UserMenu } from './components/UserMenu';
+import { DeleteCourseDialog } from './components/DeleteCourseDialog';
 
 function AppContent({ session, signOut }) {
   const token = session?.access_token;
   const { theme, toggleTheme } = useTheme();
 
+  const [logoHovered, setLogoHovered] = useState(false);
   const [courses, setCourses] = useState([]);
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [coursesError, setCoursesError] = useState(false);
@@ -30,6 +34,8 @@ function AppContent({ session, signOut }) {
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [activeTopic, setActiveTopic] = useState(null);
+  // pendingDelete: { id, name } — course queued for archive confirmation
+  const [pendingDelete, setPendingDelete] = useState(null);
   // manualTiers: { [courseId_tag]: tier } — user's self-assessment overrides, persisted to localStorage
   const [manualTiers, setManualTiers] = useState(() => {
     try { return JSON.parse(localStorage.getItem('maieutic_manual_tiers') || '{}'); } catch { return {}; }
@@ -188,14 +194,20 @@ function AppContent({ session, signOut }) {
         flexShrink: 0,
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, cursor: 'default' }}
+          onMouseEnter={() => setLogoHovered(true)}
+          onMouseLeave={() => setLogoHovered(false)}
+        >
           <div style={{
             width: 28, height: 28, borderRadius: 8,
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-          }}>🎓</div>
+            background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: `1px solid ${logoHovered ? '#818cf8' : '#4c1d95'}`,
+            transition: 'border-color 0.2s',
+          }}><ElectronIcon size={18} color="#a78bfa" animate={logoHovered} /></div>
           <span style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
-            AI Professor
+            Maieutic
           </span>
         </div>
 
@@ -209,7 +221,7 @@ function AppContent({ session, signOut }) {
             activeCourseId={activeCourseId}
             onSelect={(id) => setActiveCourseId(id)}
             onCreate={handleCreateCourse}
-            onDelete={handleDeleteCourse}
+            onDeleteRequest={(id, name) => setPendingDelete({ id, name })}
             onRename={handleRenameCourse}
           />
         </div>
@@ -261,20 +273,16 @@ function AppContent({ session, signOut }) {
             {theme.isDark ? '☀️' : '🌙'}
           </button>
 
-          {/* Sign out */}
-          <button
-            onClick={signOut}
-            title="Sign out"
-            style={{
-              background: 'none', border: `1px solid ${theme.border}`, borderRadius: 8,
-              color: theme.textFaint, cursor: 'pointer', fontSize: 11, padding: '4px 10px',
-              transition: 'all 0.15s',
+          {/* User avatar + menu (sign out + archived courses) */}
+          <UserMenu
+            email={session?.user?.email}
+            token={token}
+            signOut={signOut}
+            onCourseRestored={(course) => {
+              setCourses((prev) => [...prev, course]);
+              setActiveCourseId(course.id);
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = theme.borderStrong; e.currentTarget.style.color = theme.textSecondary; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = theme.textFaint; }}
-          >
-            Sign out
-          </button>
+          />
         </div>
       </header>
 
@@ -357,7 +365,6 @@ function AppContent({ session, signOut }) {
           ) : (
             <ChatPanel
               courseId={activeCourseId}
-              uploadedFiles={uploadedFiles}
               hasUploads={hasUploads}
               onSessionId={setSessionId}
               token={token}
@@ -413,6 +420,18 @@ function AppContent({ session, signOut }) {
           onClose={() => { setQuizOpen(false); handleXpEarned(); }}
           onXpEarned={handleXpEarned}
           onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
+        />
+      )}
+
+      {/* Delete / archive confirmation dialog */}
+      {pendingDelete && (
+        <DeleteCourseDialog
+          courseName={pendingDelete.name}
+          onConfirm={() => {
+            handleDeleteCourse(pendingDelete.id);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
     </div>

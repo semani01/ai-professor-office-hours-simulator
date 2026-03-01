@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import { ElectronIcon } from './ElectronIcon';
 
 export function AuthGate({ children, session, loading }) {
   const { signIn, signUp } = useAuth();
@@ -61,12 +62,13 @@ export function AuthGate({ children, session, loading }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 36 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 10,
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-        }}>🎓</div>
+          background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '1px solid #4c1d95',
+        }}><ElectronIcon size={26} color="#a78bfa" /></div>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: theme.textPrimary, letterSpacing: '-0.01em' }}>
-            AI Professor Office Hours
+            Maieutic
           </div>
           <div style={{ fontSize: 12, color: theme.textFaint }}>Socratic tutor grounded in your course materials</div>
         </div>

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { useChat } from '../hooks/useChat';
 import { SourceCitation } from './SourceCitation';
 import { useTheme } from '../context/ThemeContext';
+import { ElectronIcon } from './ElectronIcon';
 
 function TypingDots({ theme }) {
   return (
@@ -25,11 +26,12 @@ function TypingDots({ theme }) {
   );
 }
 
-export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, token, onResetRef, onXpEarned, conversationId, conversationIdRef, onNewBadges }) {
+export function ChatPanel({ courseId, hasUploads, onSessionId, token, onResetRef, onXpEarned, conversationId, conversationIdRef, onNewBadges }) {
   const { messages, loading, loadingHistory, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned, conversationId, conversationIdRef);
   const { theme } = useTheme();
 
   const [input, setInput] = useState('');
+  const [logoHovered, setLogoHovered] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -68,28 +70,6 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bgBase }}>
-      {/* Active materials bar */}
-      {uploadedFiles.length > 0 && (
-        <div style={{
-          padding: '8px 20px', borderBottom: `1px solid ${theme.border}`,
-          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-          background: theme.bgSurface, flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>
-            Active:
-          </span>
-          {uploadedFiles.map((f, i) => (
-            <span key={i} style={{
-              fontSize: 11, padding: '2px 8px', borderRadius: 10,
-              background: theme.accentBg, color: theme.accentLight,
-              border: `1px solid ${theme.accentBorder}`,
-              maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {f.fileName}
-            </span>
-          ))}
-        </div>
-      )}
 
       {/* Message thread */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -98,19 +78,25 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexDirection: 'column', gap: 12, color: theme.textFaint, paddingTop: 80,
           }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 16,
-              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
-              border: '1px solid #312e81',
-            }}>🎓</div>
+            <div
+              onMouseEnter={() => setLogoHovered(true)}
+              onMouseLeave={() => setLogoHovered(false)}
+              style={{
+                width: 56, height: 56, borderRadius: 16,
+                background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${logoHovered ? '#818cf8' : '#4c1d95'}`,
+                transition: 'border-color 0.2s',
+                cursor: 'default',
+              }}
+            ><ElectronIcon size={36} color="#a78bfa" animate={logoHovered} /></div>
             <p style={{ fontSize: 14, color: theme.textMuted, margin: 0, fontWeight: 500 }}>
               {hasUploads
                 ? 'What would you like to understand better?'
                 : 'Upload your course materials to get started'}
             </p>
             {hasUploads && (
-              <p style={{ fontSize: 12, color: theme.border, margin: 0 }}>
+              <p style={{ fontSize: 12, color: theme.textFaint, margin: 0 }}>
                 I'll guide you Socratically — no direct answers, just good questions
               </p>
             )}
@@ -126,10 +112,11 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
             {msg.role === 'assistant' && (
               <div style={{
                 width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, marginRight: 10, marginTop: 2, alignSelf: 'flex-start',
-              }}>🎓</div>
+                marginRight: 10, marginTop: 2, alignSelf: 'flex-start',
+                border: '1px solid #4c1d95',
+              }}><ElectronIcon size={18} color="#a78bfa" /></div>
             )}
 
             <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
@@ -185,9 +172,10 @@ export function ChatPanel({ courseId, uploadedFiles, hasUploads, onSessionId, to
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
             <div style={{
               width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
-            }}>🎓</div>
+              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '1px solid #4c1d95',
+            }}><ElectronIcon size={18} color="#a78bfa" /></div>
             <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: '18px 18px 18px 4px' }}>
               <TypingDots theme={theme} />
             </div>
