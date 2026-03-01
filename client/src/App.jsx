@@ -332,11 +332,25 @@ function AppContent({ session, signOut }) {
         display: 'flex', alignItems: 'center', gap: 12,
         background: theme.bgBase, flexShrink: 0,
       }}>
-        {/* Logo */}
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, cursor: 'default' }}
+        {/* Logo — clickable button to go home */}
+        <button
+          onClick={() => {
+            setActiveTopic(null);
+            setActiveConversationId(null);
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexShrink: 0,
+            cursor: 'pointer',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+          }}
           onMouseEnter={() => setLogoHovered(true)}
           onMouseLeave={() => setLogoHovered(false)}
+          title="Go to home"
         >
           <div style={{
             width: 28, height: 28, borderRadius: 8,
@@ -348,7 +362,7 @@ function AppContent({ session, signOut }) {
           <span style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
             Maieutic
           </span>
-        </div>
+        </button>
 
         <div style={{ width: 1, height: 18, background: theme.border, flexShrink: 0 }} />
 
@@ -542,6 +556,9 @@ function AppContent({ session, signOut }) {
               conversationId={activeConversationId}
               conversationIdRef={conversationIdRef}
               onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
+              onAutoConversation={(newConvId) => {
+                setActiveConversationId(newConvId);
+              }}
               studySessionId={activeStudySession?.id ?? null}
             />
           )}

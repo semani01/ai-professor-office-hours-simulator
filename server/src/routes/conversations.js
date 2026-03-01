@@ -75,6 +75,7 @@ router.post('/conversations', async (req, res) => {
 /**
  * PATCH /api/conversations/:id
  * Rename a conversation.
+ * Protected: Cannot rename internal conversations (starting with __)
  * Body: { title }
  * Response: { conversation: { id, title, created_at, updated_at } }
  */
@@ -90,6 +91,24 @@ router.patch('/conversations/:id', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Could not identify user' });
 
   const db = getAuthClient(jwt);
+
+  // Check conversation title to protect internal conversations
+  const { data: conv, error: checkError } = await db
+    .from('conversations')
+    .select('title')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+
+  if (checkError || !conv) {
+    return res.status(404).json({ error: 'Conversation not found' });
+  }
+
+  // Prevent renaming of internal conversations
+  if (conv.title.startsWith('__')) {
+    return res.status(403).json({ error: 'Cannot rename internal conversations' });
+  }
+
   const { data, error } = await db
     .from('conversations')
     .update({ title: title.trim(), updated_at: new Date().toISOString() })
@@ -109,6 +128,7 @@ router.patch('/conversations/:id', async (req, res) => {
 /**
  * DELETE /api/conversations/:id
  * Delete a conversation and all its messages (cascade).
+ * Protected: Cannot delete internal conversations (starting with __)
  * Response: { success: true }
  */
 router.delete('/conversations/:id', async (req, res) => {
@@ -121,6 +141,24 @@ router.delete('/conversations/:id', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Could not identify user' });
 
   const db = getAuthClient(jwt);
+
+  // Check conversation title to protect internal conversations
+  const { data: conv, error: checkError } = await db
+    .from('conversations')
+    .select('title')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+
+  if (checkError || !conv) {
+    return res.status(404).json({ error: 'Conversation not found' });
+  }
+
+  // Prevent deletion of internal conversations
+  if (conv.title.startsWith('__')) {
+    return res.status(403).json({ error: 'Cannot delete internal conversations' });
+  }
+
   const { error } = await db
     .from('conversations')
     .delete()

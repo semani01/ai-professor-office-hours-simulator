@@ -19,6 +19,8 @@ export function FocusTimer() {
   const [timeRemainingMs, setTimeRemainingMs] = useState(null);
   const [totalMs, setTotalMs] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDoneModal, setShowDoneModal] = useState(false);
+  const [doneMinutes, setDoneMinutes] = useState(null);
 
   // Tick every 100ms for smooth updates
   useEffect(() => {
@@ -27,13 +29,19 @@ export function FocusTimer() {
       setTimeRemainingMs((prev) => {
         if (prev <= 100) {
           setIsRunning(false);
+          // Calculate minutes for the done modal
+          if (totalMs) {
+            const mins = Math.round(totalMs / 60 / 1000);
+            setDoneMinutes(mins);
+            setShowDoneModal(true);
+          }
           return null;
         }
         return prev - 100;
       });
     }, 100);
     return () => clearInterval(interval);
-  }, [isRunning, timeRemainingMs]);
+  }, [isRunning, timeRemainingMs, totalMs]);
 
   function startTimer(minutes) {
     const ms = minutes * 60 * 1000;
@@ -51,6 +59,8 @@ export function FocusTimer() {
     setIsRunning(false);
     setTimeRemainingMs(null);
     setTotalMs(null);
+    setShowDoneModal(false);
+    setDoneMinutes(null);
   }
 
   // Format time as MM:SS
@@ -193,6 +203,102 @@ export function FocusTimer() {
         >
           ✕
         </button>
+      )}
+
+      {/* Done modal — full screen overlay */}
+      {showDoneModal && (
+        <>
+          <div
+            onClick={() => reset()}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 4999,
+              backdropFilter: 'blur(2px)',
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: theme.bgCard,
+              border: `1px solid ${theme.border}`,
+              borderRadius: 16,
+              padding: '40px 32px',
+              zIndex: 5000,
+              maxWidth: 420,
+              textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⏱</div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: theme.textPrimary, margin: '0 0 12px' }}>
+              Focus Complete!
+            </h2>
+            <p style={{ fontSize: 14, color: theme.textSecondary, margin: '0 0 28px', lineHeight: 1.6 }}>
+              Your {doneMinutes}-minute focus session is done. Time for a break!
+            </p>
+
+            {/* Break duration chips */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {[5, 10, 15].map((mins) => (
+                <button
+                  key={mins}
+                  onClick={() => reset()}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    background: 'rgba(245,158,11,0.1)',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    color: '#f59e0b',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(245,158,11,0.2)';
+                    e.currentTarget.style.borderColor = '#f59e0b';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(245,158,11,0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)';
+                  }}
+                >
+                  {mins}m break
+                </button>
+              ))}
+            </div>
+
+            {/* Dismiss button */}
+            <button
+              onClick={() => reset()}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: 8,
+                background: theme.bgHover,
+                border: `1px solid ${theme.border}`,
+                color: theme.textPrimary,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = theme.bgInputField;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = theme.bgHover;
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
