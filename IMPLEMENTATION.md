@@ -257,7 +257,39 @@ Keep entries concise. This is a development journal, not documentation.
 - Supabase `user_xp` and `user_achievements` tables must be created manually before Phase 6 features work (SQL in plan file)
 
 **Next:**
-- Phase 7 — Deployment (Vercel for client, Railway for server)
+- Phase 6b — Topic Rooms, flashcards, mind map, caching fixes
+
+---
+
+### 2026-03-01 — Phase 6b: Topic Rooms, Flashcards, Mind Map & Performance
+
+**Built:**
+- **`server/src/routes/topicRoom.js`**: two new endpoints — `GET /api/topic-room/:courseId?tag=&tier=` generates concepts, practice questions, coaching tips, and a mind map via Claude haiku; `GET /api/topic-room/:courseId/flashcards?tag=&tier=&count=` generates flashcards on-demand separately (3000 max_tokens). Both share a `getContextBlock()` helper that retrieves 6 chunks via `retrieveChunks`. Mind map prompt instructs Claude to return short keyword labels (≤4 words) in a hierarchical JSON array. Main endpoint bumped to 2048 max_tokens to accommodate all content without truncation.
+- **`TopicRoom.jsx`** (full rewrite): tab UI — Overview, Flashcards, Mind Map. Header shows tier badge + self-assessment buttons (↑/↓ tier). Overview shows Key Concepts, Practice Questions, Coaching Tips, and a scoped chat input for follow-up questions on this topic. `loadContent()` clears `content` to `null` before each fetch so the shimmer skeleton always shows on topic switches.
+- **Flashcards tab**: empty state with "✨ Generate Flashcards" button; on-demand fetch; 3D CSS flip animation (`flip-card`/`flip-inner`/`flip-face` classes); card progress dots; prev/next navigation; custom card creation with `localStorage` persistence keyed by `${courseId}_${topicTag}`; custom cards display ✏️ Custom badge; regenerate button.
+- **Mind Map tab**: left-to-right collapsible SVG tree with cubic bezier curves; layout math computes branch Y positions by counting visible children; branch nodes toggle collapse/expand on click with `+`/`−` indicator; tree expand CSS animation on sub-nodes. Empty state shows "↺ Reload Topic" button. SVG rendered with explicit `width`/`height` (not `width: 100%`) inside an `overflow: auto` wrapper for free-scroll.
+- **`KnowledgePortfolio.jsx`**: `getTier(topic, overrides)` now checks `overrides[topic.tag]` first; `TopicPill` and bucket counts (Mastered/In Progress/Revisit) respond to manual tier overrides. `tierOverrides` prop accepted.
+- **`App.jsx`**: `manualTiers` state initialized from `localStorage`; `handleTierChange()` updates state + localStorage + `activeTopic.manualTier`; `tierOverridesForCourse` slices the flat map to just `{ [tag]: tier }` for the active course; passed to `KnowledgePortfolio` and `TopicRoom`. `flashcardCacheRef` and `topicContentCacheRef` refs added.
+- **Achievement pipeline fix** (`quiz.js`): `/quiz/check` now `await`s `checkAchievements` before sending response and includes `newBadges` in the JSON body. `QuizMode.jsx` sends `fastAnswer` bool and calls `onNewBadges`.
+- **Caching** (`TopicRoom.jsx`): `contentCache` ref (keyed by `courseId_tag_tier`) used by `loadContent()` — cache hit skips the Claude fetch entirely, serving content synchronously. `useState` initializes `content` and `loadingContent` from cache on mount so re-opens are instant with no shimmer. `flashcardCache` ref (keyed by `courseId_tag`) stores generated AI cards; `aiCards` state initialized from cache on mount and restored on topic switch via `useEffect`.
+
+**Decisions:**
+- Flashcard generation separated from main topic-room fetch — avoids token budget pressure on the main endpoint and allows independent regeneration
+- `contentCache` key includes tier (`courseId_tag_tier`) so tier promotions always fetch fresh content tailored to the new level; same-tier revisits are instant
+- `flashcardCacheRef` and `topicContentCacheRef` are plain `useRef` objects (not `useState`) in `App.jsx` — cache writes don't trigger re-renders; state in `TopicRoom` drives UI updates
+- `aiCards` lifted to `TopicRoom` state (not `FlashcardsTab` local state) so it survives tab switches without needing to re-fetch; further lifted to App-level ref cache so it survives back-navigation and topic switches
+- Mind map uses `foreignObject` for text inside SVG rects — allows proper text truncation with CSS `textOverflow: ellipsis` and `whiteSpace: nowrap` that native SVG `<text>` can't do
+- `cursor: 'grab'` on the mind map scroll container signals it's pannable
+
+**Problems:**
+- **Flashcard empty on tab return**: `aiCards` was local state in `FlashcardsTab` — unmounts on tab switch, resets to `null`. Fixed by lifting to `TopicRoom` state and passing as prop.
+- **Flashcard lost on back-navigation**: `TopicRoom` unmounts when user clicks Back; local state is lost. Fixed by adding `flashcardCacheRef` in `App.jsx`; `TopicRoom` initializes from cache on mount via `useState(() => cache[key] ?? null)` and writes to cache via `setAiCards()` wrapper.
+- **Content re-fetching on every re-open**: same unmount/remount issue for topic overview + mind map. Fixed by `topicContentCacheRef` in `App.jsx`; `loadContent()` returns immediately on cache hit; `useState` lazy initializer reads from cache so first render is already populated.
+- **Mind map clipping**: SVG was using `width: '100%'` inside a parent with `padding: '16px 20px'` and `overflowY: auto` — the SVG tried to fit the padded width, leaving the right side cut off. Fixed by explicit `width={SVG_W}` / `height={SVG_H}` on the SVG and a dedicated `overflow: auto` wrapper with `padding: 0` on the mindmap tab.
+- **Server route ordering concern**: `GET /topic-room/:courseId/flashcards` registered after `GET /topic-room/:courseId` — Express `:courseId` only matches one path segment so there is no routing conflict; the specific route wins regardless.
+
+**Next:**
+- Phase 7 — Deployment (Vercel for client, Railway/Render for server)
 
 ---
 

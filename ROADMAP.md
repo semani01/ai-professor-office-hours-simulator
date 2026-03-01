@@ -226,15 +226,18 @@ Submitted.
 
 ## Phase Summary
 
-| Phase | What Gets Built | Priority |
+| Phase | What Gets Built | Status |
 |---|---|---|
-| 0 | Setup & environment | Unblocking |
-| 1 | File ingestion + embeddings | Core |
-| 2 | Retrieval + Claude Socratic chat | Core |
-| 3 | Frontend end-to-end | Core |
-| 4 | Session tracking + weak spot dashboard | Differentiator |
-| 5 | Polish + edge cases | Demo quality |
-| 6 | Deployment | Submission requirement |
-| 7 | Video + write-up | The actual deliverable |
+| 0 | Setup & environment | ✅ Done |
+| 1 | File ingestion + embeddings | ✅ Done |
+| 2 | Retrieval + Claude Socratic chat | ✅ Done |
+| 3 | Frontend end-to-end | ✅ Done |
+| 4 | Session tracking + weak spot dashboard | ✅ Done |
+| 5 | Auth, multi-course, file viewer | ✅ Done |
+| 5a | Polish, dark/light mode, bug fixes | ✅ Done |
+| 6 | Gamification — XP, quizzes, achievements, Knowledge Portfolio | ✅ Done |
+| 6b | Topic Rooms — flashcards, mind map, caching, tier sync | ✅ Done |
+| 7 | Deployment (Vercel + Railway/Render) | ⬜ Next |
+| 8 | Demo video + submission write-up | ⬜ Pending |
 
-Phases 1–3 are the non-negotiable core. If time becomes constrained, prioritize Phase 4 next — the weak spot dashboard is the most visually compelling differentiator in the demo video and the strongest answer to "how is this different from NotebookLM." Phase 5 is about not embarrassing yourself on screen.
+Phases 1–3 are the non-negotiable core. Phase 6/6b (gamification + Topic Rooms) is the strongest differentiator from NotebookLM — self-paced mastery progression, AI-generated flashcards, and collapsible mind maps built directly from uploaded course materials. Phase 7 (deployment) is the submission gate.
