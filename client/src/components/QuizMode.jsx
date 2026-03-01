@@ -12,7 +12,7 @@ const QUESTION_TIME = 30; // seconds per question
  *   onClose: () => void
  *   onXpEarned: (xp: number) => void  — to refresh header XP bar
  */
-export function QuizMode({ courseId, token, onClose, onXpEarned }) {
+export function QuizMode({ courseId, token, onClose, onXpEarned, onNewBadges }) {
   const { theme } = useTheme();
   const [phase, setPhase] = useState('loading'); // 'loading' | 'question' | 'review' | 'results' | 'error'
   const [questions, setQuestions] = useState([]);
@@ -69,6 +69,10 @@ export function QuizMode({ courseId, token, onClose, onXpEarned }) {
   function handleReveal(letter) {
     clearInterval(timerRef.current);
     const finalAnswer = letter ?? selected ?? null;
+    const elapsed = (Date.now() - answerTimeRef.current) / 1000;
+    if (elapsed <= 10 && finalAnswer !== null) {
+      answerTimeRef.fastAnswerEarned = true;
+    }
     setSelected(finalAnswer);
     setRevealed(true);
     if (finalAnswer !== null) {
@@ -96,12 +100,18 @@ export function QuizMode({ courseId, token, onClose, onXpEarned }) {
       const res = await fetch('/api/quiz/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ answers: finalAnswers, questions, courseId }),
+        body: JSON.stringify({
+          answers: finalAnswers,
+          questions,
+          courseId,
+          fastAnswer: !!answerTimeRef.fastAnswerEarned,
+        }),
       });
       const data = await res.json();
       setResults(data);
       setPhase('results');
       if (data.xpEarned > 0 && onXpEarned) onXpEarned(data.xpEarned);
+      if (data.newBadges?.length > 0 && onNewBadges) onNewBadges(data.newBadges);
     } catch {
       setError('Failed to submit quiz. Please try again.');
       setPhase('error');

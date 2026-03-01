@@ -30,6 +30,10 @@ function AppContent({ session, signOut }) {
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [activeTopic, setActiveTopic] = useState(null);
+  // manualTiers: { [courseId_tag]: tier } — user's self-assessment overrides, persisted to localStorage
+  const [manualTiers, setManualTiers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('maieutic_manual_tiers') || '{}'); } catch { return {}; }
+  });
   const [newBadgeKeys, setNewBadgeKeys] = useState([]);
   const conversationIdRef = useRef(null);
 
@@ -140,6 +144,21 @@ function AppContent({ session, signOut }) {
   function handleConversationDeleted() {
     setActiveConversationId(null);
     resetMessagesRef.current?.();
+  }
+
+  function handleTierChange(tag, newTier) {
+    const key = `${activeCourseId}_${tag}`;
+    const updated = { ...manualTiers, [key]: newTier };
+    setManualTiers(updated);
+    localStorage.setItem('maieutic_manual_tiers', JSON.stringify(updated));
+    // Keep activeTopic in sync so the header badge updates immediately
+    setActiveTopic((prev) => prev ? { ...prev, manualTier: newTier } : prev);
+  }
+
+  function handleTopicClick(topic) {
+    const key = `${activeCourseId}_${topic.tag}`;
+    const override = manualTiers[key];
+    setActiveTopic(override ? { ...topic, manualTier: override } : topic);
   }
 
   const hasUploads = uploadedFiles.length > 0;
@@ -320,6 +339,7 @@ function AppContent({ session, signOut }) {
               token={token}
               onBack={() => setActiveTopic(null)}
               onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
+              onTierChange={handleTierChange}
             />
           ) : (
             <ChatPanel
@@ -355,7 +375,7 @@ function AppContent({ session, signOut }) {
               topicsVersion={topicsVersion}
               portfolioVersion={portfolioVersion}
               xpData={xpData}
-              onTopicClick={setActiveTopic}
+              onTopicClick={handleTopicClick}
             />
           </div>
         </aside>
@@ -378,6 +398,7 @@ function AppContent({ session, signOut }) {
           token={token}
           onClose={() => { setQuizOpen(false); handleXpEarned(); }}
           onXpEarned={handleXpEarned}
+          onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
         />
       )}
     </div>

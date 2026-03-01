@@ -141,11 +141,11 @@ router.post('/quiz/generate', async (req, res) => {
 
 /**
  * POST /api/quiz/check
- * Body: { answers: {"0":"A","1":"C",...}, questions: [{correct,...}], courseId }
- * Response: { score, total, xpEarned, results: [{correct, selectedAnswer, explanation, sourceHint}] }
+ * Body: { answers: {"0":"A","1":"C",...}, questions: [{correct,...}], courseId, fastAnswer?: boolean }
+ * Response: { score, total, xpEarned, newBadges, results: [{correct, selectedAnswer, explanation, sourceHint}] }
  */
 router.post('/quiz/check', async (req, res) => {
-  const { answers, questions } = req.body;
+  const { answers, questions, fastAnswer } = req.body;
   if (!answers || !questions) return res.status(400).json({ error: 'answers and questions are required' });
 
   const jwt = extractJwt(req);
@@ -168,18 +168,25 @@ router.post('/quiz/check', async (req, res) => {
     };
   });
 
-  // Award XP + check achievements (always, even if score = 0 — quiz_taker badge needs quizCompleted)
+  // Award XP (fire-and-forget)
   const xpEarned = score * XP_PER_CORRECT_QUIZ;
-  const xpToAward = xpEarned > 0 ? xpEarned : 1; // award at least 1 XP so awardXp doesn't short-circuit
-  awardXp(userId, jwt, xpToAward).then(() => {
-    checkAchievements(userId, jwt, {
+  const xpToAward = xpEarned > 0 ? xpEarned : 1;
+  awardXp(userId, jwt, xpToAward).catch((err) => console.error('[quiz] XP award error:', err.message));
+
+  // Check achievements — awaited so we can return newBadges
+  let newBadges = [];
+  try {
+    newBadges = await checkAchievements(userId, jwt, {
       quizCompleted: true,
       quizScore: score,
       quizTotal: questions.length,
+      fastAnswer: !!fastAnswer,
     });
-  }).catch((err) => console.error('[quiz] XP award error:', err.message));
+  } catch (e) {
+    console.error('[quiz] Achievement check error:', e.message);
+  }
 
-  return res.json({ score, total: questions.length, xpEarned, results }); // xpEarned reflects correct-answer XP only
+  return res.json({ score, total: questions.length, xpEarned, newBadges, results });
 });
 
 module.exports = router;

@@ -13,14 +13,14 @@ const TIER_TONE = {
 };
 
 /**
- * GET /api/topic-room/:courseId/:topicTag?tier=revisit|inprogress|mastered
+ * GET /api/topic-room/:courseId?tag=<topicTag>&tier=revisit|inprogress|mastered
  *
  * Generates Topic Room content from the student's own course materials.
  * Response: { concepts: string[], questions: string[], coachingTips: string[], tier: string }
  */
-router.get('/topic-room/:courseId/:topicTag', async (req, res) => {
+router.get('/topic-room/:courseId', async (req, res) => {
   const { courseId } = req.params;
-  const topicTag = decodeURIComponent(req.params.topicTag);
+  const topicTag = req.query.tag ? decodeURIComponent(req.query.tag) : '';
   const tier = req.query.tier || 'inprogress';
 
   if (!courseId || !topicTag) {
@@ -58,6 +58,7 @@ Based ONLY on the provided course material chunks, generate:
 1. Key Concepts: 3-5 bullet points summarizing the core ideas the student needs to understand
 2. Practice Questions: exactly 3 open-ended Socratic questions (no answers — let the student think)
 3. Coaching Tips: 2-3 personalized tips for a ${tier} student
+4. Flashcards: 5 question/answer pairs that test understanding (not rote recall)
 
 Tone: ${toneLine}
 
@@ -66,9 +67,10 @@ IMPORTANT:
 - Practice questions should be genuinely thought-provoking, not trivial recall
 - Coaching tips should feel personal, not generic
 - For mastered students, go deeper — what can they explore beyond the basics?
+- Flashcard answers should be concise (1-2 sentences)
 
 Return ONLY valid JSON with no extra text:
-{"concepts":["...","...","..."],"questions":["...","...","..."],"coachingTips":["...","..."]}`;
+{"concepts":["..."],"questions":["..."],"coachingTips":["..."],"flashcards":[{"question":"...","answer":"..."}]}`;
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -95,6 +97,7 @@ Return ONLY valid JSON with no extra text:
       concepts: parsed.concepts,
       questions: parsed.questions,
       coachingTips: parsed.coachingTips,
+      flashcards: parsed.flashcards || [],
       tier,
     });
   } catch (err) {
