@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { StreakCalendar } from './StreakCalendar';
 
-function getTier(topic) {
+function getTier(topic, overrides = {}) {
+  if (overrides[topic.tag]) return overrides[topic.tag];
   if (topic.resolved && topic.hintsNeeded <= 1) return 'mastered';
   if (topic.hintsNeeded >= 4 || (!topic.resolved && topic.exchanges >= 2)) return 'revisit';
   return 'inprogress';
@@ -14,8 +15,8 @@ const TIER_CONFIG = {
   revisit:    { label: 'Revisit',      icon: '↺', colorKey: 'red' },
 };
 
-function TopicPill({ topic, theme, onClick }) {
-  const tier = getTier(topic);
+function TopicPill({ topic, theme, onClick, tierOverrides }) {
+  const tier = getTier(topic, tierOverrides);
   const cfg = TIER_CONFIG[tier];
   const s = theme[cfg.colorKey];
   const [hovered, setHovered] = useState(false);
@@ -83,7 +84,7 @@ function ProgressRing({ value, max, color, size = 48 }) {
   );
 }
 
-export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVersion, xpData, onTopicClick }) {
+export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVersion, xpData, onTopicClick, tierOverrides = {} }) {
   const { theme } = useTheme();
   const [topics, setTopics] = useState([]);
   const [hasCourseTopic, setHasCourseTopic] = useState(null);
@@ -137,9 +138,9 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
     return () => clearInterval(interval);
   }, [courseId, token]);
 
-  const mastered   = topics.filter((t) => getTier(t) === 'mastered');
-  const inprogress = topics.filter((t) => getTier(t) === 'inprogress');
-  const revisit    = topics.filter((t) => getTier(t) === 'revisit');
+  const mastered   = topics.filter((t) => getTier(t, tierOverrides) === 'mastered');
+  const inprogress = topics.filter((t) => getTier(t, tierOverrides) === 'inprogress');
+  const revisit    = topics.filter((t) => getTier(t, tierOverrides) === 'revisit');
   const total = topics.length;
 
   const filtered = activeSection === 'all' ? topics
@@ -227,6 +228,7 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
               key={topic.tag || i}
               topic={topic}
               theme={theme}
+              tierOverrides={tierOverrides}
               onClick={() => onTopicClick && onTopicClick(topic)}
             />
           ))}

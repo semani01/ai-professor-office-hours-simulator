@@ -164,6 +164,13 @@ function AppContent({ session, signOut }) {
   const hasUploads = uploadedFiles.length > 0;
   const activeCourse = courses.find((c) => c.id === activeCourseId);
 
+  // Slice manualTiers to just { [tag]: tier } for the active course
+  const tierOverridesForCourse = Object.fromEntries(
+    Object.entries(manualTiers)
+      .filter(([k]) => k.startsWith(`${activeCourseId}_`))
+      .map(([k, v]) => [k.slice(activeCourseId.length + 1), v])
+  );
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: theme.bgBase }}>
       {/* Header */}
@@ -376,6 +383,7 @@ function AppContent({ session, signOut }) {
               portfolioVersion={portfolioVersion}
               xpData={xpData}
               onTopicClick={handleTopicClick}
+              tierOverrides={tierOverridesForCourse}
             />
           </div>
         </aside>
