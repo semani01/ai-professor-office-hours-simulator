@@ -201,7 +201,7 @@ export function ActiveSessionBanner({ session, onEndSession }) {
 
           {showBreakPicker && (
             <div style={{
-              position: 'absolute', bottom: 'calc(100% + 8px)', right: 0,
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
               background: theme.bgCard,
               border: `1px solid ${theme.border}`,
               borderRadius: 10,

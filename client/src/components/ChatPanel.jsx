@@ -26,7 +26,7 @@ function TypingDots({ theme }) {
   );
 }
 
-export function ChatPanel({ courseId, hasUploads, onSessionId, token, onResetRef, onXpEarned, conversationId, conversationIdRef, onNewBadges, studySessionId }) {
+export function ChatPanel({ courseId, hasUploads, onSessionId, token, onResetRef, onSendRef, onXpEarned, conversationId, conversationIdRef, onNewBadges, studySessionId }) {
   const { messages, loading, loadingHistory, error, sendMessage, sessionId, resetMessages } = useChat(courseId, token, onXpEarned, conversationId, conversationIdRef, studySessionId);
   const { theme } = useTheme();
 
@@ -39,6 +39,11 @@ export function ChatPanel({ courseId, hasUploads, onSessionId, token, onResetRef
   useEffect(() => {
     if (onResetRef) onResetRef.current = resetMessages;
   }, [resetMessages]);
+
+  // Expose sendMessage to parent via ref (for session start guided message)
+  useEffect(() => {
+    if (onSendRef) onSendRef.current = sendMessage;
+  }, [sendMessage]);
 
   // Bubble sessionId up to App once on mount so the dashboard can use it
   useEffect(() => {

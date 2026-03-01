@@ -134,7 +134,7 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
   useEffect(() => {
     if (!courseId || !token) return;
     fetchSummary({ showLoading: true }); // first load shows skeleton
-    const interval = setInterval(() => fetchSummary(), 15_000); // polls silently
+    const interval = setInterval(() => fetchSummary(), 5_000); // polls silently
     return () => clearInterval(interval);
   }, [courseId, token]);
 

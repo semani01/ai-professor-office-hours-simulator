@@ -19,12 +19,19 @@ router.get('/conversations', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Could not identify user' });
 
   const db = getAuthClient(jwt);
-  const { data, error } = await db
+  const query = db
     .from('conversations')
     .select('id, title, created_at, updated_at')
     .eq('user_id', userId)
     .eq('course_fk', courseId)
     .order('updated_at', { ascending: false });
+
+  // By default hide internal topic-room conversations; pass includeHidden=true to see all
+  if (req.query.includeHidden !== 'true') {
+    query.not('title', 'like', '__topic__%');
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[conversations] list error:', error.message);

@@ -23,6 +23,27 @@ import { WelcomeBackPanel } from './components/WelcomeBackPanel';
 import { QuestPanel } from './components/QuestPanel';
 import { SideQuestPanel } from './components/SideQuestPanel';
 
+const INTENT_LABELS = {
+  general: 'General Study',
+  exam_prep: 'Exam Prep',
+  assignment: 'Assignment',
+  review_weak: 'Review Weak Spots',
+  explore_new: 'Explore New Topics',
+};
+
+function makeDragHandler(setter, direction, min, max) {
+  return function onMouseDown(e) {
+    e.preventDefault();
+    const onMove = (ev) => setter((w) => Math.max(min, Math.min(max, w + ev.movementX * direction)));
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+}
+
 function AppContent({ session, signOut }) {
   const token = session?.access_token;
   const { theme, toggleTheme } = useTheme();
@@ -46,6 +67,14 @@ function AppContent({ session, signOut }) {
   });
   const [newBadgeKeys, setNewBadgeKeys] = useState([]);
 
+  // Panel widths (resizable)
+  const [leftWidth, setLeftWidth] = useState(() => parseInt(localStorage.getItem('maieutic_left_w') || '240', 10));
+  const [rightWidth, setRightWidth] = useState(() => parseInt(localStorage.getItem('maieutic_right_w') || '260', 10));
+  useEffect(() => { localStorage.setItem('maieutic_left_w', leftWidth); }, [leftWidth]);
+  useEffect(() => { localStorage.setItem('maieutic_right_w', rightWidth); }, [rightWidth]);
+  const onLeftHandleDrag = makeDragHandler(setLeftWidth, 1, 180, 400);
+  const onRightHandleDrag = makeDragHandler(setRightWidth, -1, 200, 420);
+
   // Study session state
   const [activeStudySession, setActiveStudySession] = useState(null);
   const [showSessionSetup, setShowSessionSetup] = useState(false);
@@ -54,6 +83,8 @@ function AppContent({ session, signOut }) {
   const [endingSession, setEndingSession] = useState(false);
   // quiz results accumulated during this session (passed to end-session endpoint)
   const sessionQuizResultsRef = useRef([]);
+  // ref to send a message programmatically into the active ChatPanel
+  const sendMessageRef = useRef(null);
 
   // Quests
   const { quests, adoptQuests, updateQuestStatus, deleteQuest, checkQuestCompletion } =
@@ -123,7 +154,6 @@ function AppContent({ session, signOut }) {
   // When active course changes, reset local state
   useEffect(() => {
     setUploadedFiles([]);
-    setSessionId(null);
     setTopicsVersion(0);
     setActiveConversationId(null);
     setActiveTopic(null);
@@ -209,6 +239,36 @@ function AppContent({ session, signOut }) {
     return Object.entries(manualTiers)
       .filter(([k]) => k.startsWith(`${activeCourseId}_`))
       .map(([k, v]) => ({ tag: k.slice(activeCourseId.length + 1), tier: v }));
+  }
+
+  async function handleSessionStarted(sess) {
+    setActiveStudySession(sess);
+    sessionQuizResultsRef.current = [];
+    setShowSessionSetup(false);
+    // Create a named conversation for this session
+    try {
+      const res = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ courseId: activeCourseId, title: `📖 ${INTENT_LABELS[sess.intent] || 'Study'} Session` }),
+      });
+      const data = await res.json();
+      if (data.conversation) {
+        setActiveConversationId(data.conversation.id);
+      }
+    } catch { /* ignore */ }
+    // After state settles, send guided opening message
+    setTimeout(() => {
+      const plan = sess.study_plan;
+      const steps = plan?.steps || [];
+      let intro = `Let's start your **${INTENT_LABELS[sess.intent] || 'study'}** session! 🎯\n\n`;
+      if (steps.length > 0) {
+        intro += `Here's your plan:\n${steps.map((s, i) => `**${i + 1}.** ${s.action}${s.estimatedMinutes ? ` — ${s.estimatedMinutes} min` : ''}`).join('\n')}\n\n`;
+      }
+      intro += `Type a question to get started, or open a topic from the Knowledge Portfolio on the right.`;
+      sendMessageRef.current?.(intro, { isSystem: true });
+    }, 200);
+    handleXpEarned();
   }
 
   async function handleEndSession() {
@@ -385,7 +445,7 @@ function AppContent({ session, signOut }) {
       <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left panel */}
         <aside style={{
-          width: 240, borderRight: `1px solid ${theme.border}`,
+          width: leftWidth,
           display: 'flex', flexDirection: 'column',
           background: theme.bgSurface, flexShrink: 0, overflow: 'hidden',
         }}>
@@ -439,6 +499,18 @@ function AppContent({ session, signOut }) {
           </div>
         </aside>
 
+        {/* Left drag handle */}
+        <div
+          onMouseDown={onLeftHandleDrag}
+          style={{
+            width: 4, flexShrink: 0, cursor: 'col-resize',
+            background: 'transparent', borderRight: `1px solid ${theme.border}`,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#6366f133'; e.currentTarget.style.borderRightColor = '#6366f1'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderRightColor = theme.border; }}
+        />
+
         {/* Center panel */}
         <section style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           {activeTopic ? (
@@ -451,6 +523,7 @@ function AppContent({ session, signOut }) {
               onTierChange={handleTierChange}
               flashcardCache={flashcardCacheRef}
               contentCache={topicContentCacheRef}
+              studySessionId={activeStudySession?.id ?? null}
             />
           ) : (
             <ChatPanel
@@ -458,6 +531,7 @@ function AppContent({ session, signOut }) {
               hasUploads={hasUploads}
               token={token}
               onResetRef={resetMessagesRef}
+              onSendRef={sendMessageRef}
               onXpEarned={handleXpEarned}
               conversationId={activeConversationId}
               conversationIdRef={conversationIdRef}
@@ -467,9 +541,21 @@ function AppContent({ session, signOut }) {
           )}
         </section>
 
+        {/* Right drag handle */}
+        <div
+          onMouseDown={onRightHandleDrag}
+          style={{
+            width: 4, flexShrink: 0, cursor: 'col-resize',
+            background: 'transparent', borderLeft: `1px solid ${theme.border}`,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#6366f133'; e.currentTarget.style.borderLeftColor = '#6366f1'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = theme.border; }}
+        />
+
         {/* Right panel — Knowledge Portfolio + Quests + Side Quests */}
         <aside style={{
-          width: 260, borderLeft: `1px solid ${theme.border}`,
+          width: rightWidth,
           display: 'flex', flexDirection: 'column',
           background: theme.bgSurface, flexShrink: 0, overflow: 'hidden',
         }}>
@@ -542,10 +628,7 @@ function AppContent({ session, signOut }) {
         <StudySessionModal
           courseId={activeCourseId}
           token={token}
-          onSessionStarted={(sess) => {
-            setActiveStudySession(sess);
-            sessionQuizResultsRef.current = [];
-          }}
+          onSessionStarted={handleSessionStarted}
           onClose={() => setShowSessionSetup(false)}
         />
       )}
@@ -554,7 +637,7 @@ function AppContent({ session, signOut }) {
         <SessionSummaryPanel
           summary={sessionSummary}
           onClose={() => setSessionSummary(null)}
-          onAdoptQuests={async (actions) => { await adoptQuests(actions); }}
+          onAdoptQuests={async (actions) => { await adoptQuests(actions); handleXpEarned(); }}
         />
       )}
 
@@ -563,6 +646,7 @@ function AppContent({ session, signOut }) {
           summary={welcomeBackSummary}
           onAdoptQuests={async (actions) => {
             await adoptQuests(actions);
+            handleXpEarned();
             setWelcomeBackSummary(null);
           }}
           onDismiss={() => {

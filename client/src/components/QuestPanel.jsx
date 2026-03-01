@@ -2,11 +2,8 @@ import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 
 const QUEST_ICONS = { topic_room: '📖', quiz: '🧠', chat: '💬', review: '🔍', custom: '📌' };
-const STATUS_DOT = {
-  pending: '#6366f1',
-  in_progress: '#3b82f6',
-  completed: '#22c55e',
-};
+const ACCENT = { pending: '#6366f1', in_progress: '#3b82f6', completed: '#22c55e' };
+const STATUS_LABEL = { pending: 'Pending', in_progress: 'In Progress', completed: 'Done' };
 
 /**
  * QuestPanel — displays AI-generated quests in the right sidebar.
@@ -33,20 +30,20 @@ export function QuestPanel({ quests, onQuestAction, onStatusChange, onDelete }) 
       <button
         onClick={() => setCollapsed((v) => !v)}
         style={{
-          width: '100%', padding: '8px 14px',
+          width: '100%', padding: '9px 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: 'none', border: 'none', cursor: 'pointer',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Quests
+          <span style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            🗺 Quests
           </span>
           {active.length > 0 && (
             <span style={{
-              fontSize: 9, fontWeight: 700,
+              fontSize: 10, fontWeight: 700,
               background: '#6366f1', color: '#fff',
-              borderRadius: 10, padding: '1px 5px',
+              borderRadius: 10, padding: '1px 6px',
             }}>
               {active.length}
             </span>
@@ -58,7 +55,7 @@ export function QuestPanel({ quests, onQuestAction, onStatusChange, onDelete }) 
       </button>
 
       {!collapsed && (
-        <div style={{ padding: '0 10px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ padding: '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {active.map((quest) => (
             <QuestCard
               key={quest.id}
@@ -76,7 +73,7 @@ export function QuestPanel({ quests, onQuestAction, onStatusChange, onDelete }) 
                 onClick={() => setShowCompleted((v) => !v)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 10, color: theme.textFaint, textAlign: 'left',
+                  fontSize: 11, color: theme.textFaint, textAlign: 'left',
                   padding: '2px 4px', marginTop: 2,
                 }}
               >
@@ -104,50 +101,46 @@ export function QuestPanel({ quests, onQuestAction, onStatusChange, onDelete }) 
 function QuestCard({ quest, theme, onGo, onComplete, onDelete, dimmed }) {
   const [hovered, setHovered] = useState(false);
   const isDone = quest.status === 'completed';
+  const accentColor = ACCENT[quest.status] || '#6366f1';
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '8px 10px',
-        borderRadius: 9,
+        padding: '10px 12px',
+        borderRadius: 10,
         background: hovered ? theme.bgHover : theme.bgSurface,
-        border: `1px solid ${isDone ? 'transparent' : theme.border}`,
-        opacity: dimmed ? 0.55 : 1,
+        border: `1px solid ${isDone ? 'transparent' : theme.borderStrong}`,
+        borderLeft: `3px solid ${accentColor}`,
+        opacity: dimmed ? 0.6 : 1,
         transition: 'all 0.15s',
-        display: 'flex', flexDirection: 'column', gap: 5,
+        display: 'flex', flexDirection: 'column', gap: 7,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
-        {/* Status dot */}
-        <div style={{
-          width: 7, height: 7, borderRadius: '50%', flexShrink: 0, marginTop: 4,
-          background: STATUS_DOT[quest.status] || '#6366f1',
-        }} />
-
-        {/* Quest icon */}
-        <span style={{ fontSize: 13, flexShrink: 0 }}>
+      {/* Top row: icon + title + delete */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1.3 }}>
           {QUEST_ICONS[quest.quest_type] || '📌'}
         </span>
 
-        {/* Title */}
         <span style={{
-          fontSize: 12, fontWeight: 500, color: isDone ? theme.textFaint : theme.textPrimary,
-          flex: 1, lineHeight: 1.4, overflow: 'hidden',
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          fontSize: 13, fontWeight: 600,
+          color: isDone ? theme.textFaint : theme.textPrimary,
+          flex: 1, lineHeight: 1.45,
           textDecoration: isDone ? 'line-through' : 'none',
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
         }}>
           {quest.title}
         </span>
 
-        {/* Delete on hover */}
         {hovered && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             style={{
               background: 'none', border: 'none', padding: '0 2px',
-              color: theme.textFaint, fontSize: 11, cursor: 'pointer', flexShrink: 0, lineHeight: 1,
+              color: theme.textFaint, fontSize: 13, cursor: 'pointer', flexShrink: 0, lineHeight: 1,
             }}
             onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = theme.textFaint; }}
@@ -156,13 +149,24 @@ function QuestCard({ quest, theme, onGo, onComplete, onDelete, dimmed }) {
         )}
       </div>
 
-      {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 5, paddingLeft: 14 }}>
+      {/* Bottom row: status pill + action buttons */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+          background: accentColor + '22',
+          border: `1px solid ${accentColor}55`,
+          color: accentColor,
+        }}>
+          {STATUS_LABEL[quest.status] || 'Pending'}
+        </span>
+
+        <div style={{ flex: 1 }} />
+
         {!isDone && (
           <button
             onClick={onGo}
             style={{
-              padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 600,
+              padding: '3px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700,
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               border: 'none', color: '#fff', cursor: 'pointer',
               transition: 'opacity 0.15s',
@@ -176,9 +180,9 @@ function QuestCard({ quest, theme, onGo, onComplete, onDelete, dimmed }) {
         <button
           onClick={onComplete}
           style={{
-            padding: '2px 9px', borderRadius: 5, fontSize: 10, fontWeight: 500,
+            padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
             background: 'none',
-            border: `1px solid ${isDone ? theme.borderStrong : '#22c55e44'}`,
+            border: `1px solid ${isDone ? theme.borderStrong : 'rgba(34,197,94,0.5)'}`,
             color: isDone ? theme.textFaint : '#22c55e', cursor: 'pointer',
             transition: 'all 0.15s',
           }}

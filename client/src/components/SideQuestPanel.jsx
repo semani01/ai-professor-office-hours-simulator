@@ -80,20 +80,20 @@ export function SideQuestPanel({ courseId, token }) {
       <button
         onClick={() => setCollapsed((v) => !v)}
         style={{
-          width: '100%', padding: '8px 14px',
+          width: '100%', padding: '9px 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: 'none', border: 'none', cursor: 'pointer',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Side Quests
+          <span style={{ fontSize: 11, fontWeight: 700, color: theme.textSecondary, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            ✅ Side Quests
           </span>
           {active.length > 0 && (
             <span style={{
-              fontSize: 9, fontWeight: 700,
+              fontSize: 10, fontWeight: 700,
               background: theme.bgCard, border: `1px solid ${theme.borderStrong}`,
-              color: theme.textMuted, borderRadius: 10, padding: '1px 5px',
+              color: theme.textMuted, borderRadius: 10, padding: '1px 6px',
             }}>
               {active.length}
             </span>
@@ -105,13 +105,13 @@ export function SideQuestPanel({ courseId, token }) {
       </button>
 
       {!collapsed && (
-        <div style={{ padding: '0 10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ padding: '0 10px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {/* Add input */}
           <div style={{
             display: 'flex', gap: 6, alignItems: 'center',
             background: theme.bgInputField,
             border: `1px solid ${theme.border}`,
-            borderRadius: 8, padding: '4px 8px',
+            borderRadius: 8, padding: '6px 10px',
           }}>
             <input
               ref={inputRef}
@@ -122,7 +122,7 @@ export function SideQuestPanel({ courseId, token }) {
               placeholder="Add a task..."
               style={{
                 flex: 1, background: 'none', border: 'none', outline: 'none',
-                fontSize: 11, color: theme.textPrimary, fontFamily: 'inherit',
+                fontSize: 13, color: theme.textPrimary, fontFamily: 'inherit',
               }}
             />
             {newTitle.trim() && (
@@ -130,9 +130,9 @@ export function SideQuestPanel({ courseId, token }) {
                 onClick={handleAdd}
                 disabled={adding}
                 style={{
-                  background: '#6366f1', border: 'none', borderRadius: 5,
-                  color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                  padding: '2px 8px', flexShrink: 0,
+                  background: '#6366f1', border: 'none', borderRadius: 6,
+                  color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  padding: '4px 12px', flexShrink: 0,
                 }}
               >
                 +
@@ -152,7 +152,7 @@ export function SideQuestPanel({ courseId, token }) {
           ))}
 
           {ordered.length === 0 && (
-            <div style={{ fontSize: 11, color: theme.textFaint, fontStyle: 'italic', padding: '4px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: 12, color: theme.textFaint, fontStyle: 'italic', padding: '4px 4px', textAlign: 'center' }}>
               No tasks yet
             </div>
           )}
@@ -170,31 +170,36 @@ function SideQuestRow({ sq, theme, onToggle, onDelete }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 7,
-        padding: '5px 6px', borderRadius: 7,
+        display: 'flex', alignItems: 'center', gap: 9,
+        padding: '7px 8px', borderRadius: 8,
         background: hovered ? theme.bgHover : 'none',
-        transition: 'background 0.12s',
+        border: `1px solid ${hovered ? theme.border : 'transparent'}`,
+        transition: 'all 0.12s',
       }}
     >
-      {/* Checkbox */}
+      {/* Checkbox — 18×18 */}
       <button
         onClick={onToggle}
         style={{
-          width: 14, height: 14, borderRadius: 4, flexShrink: 0,
+          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
           background: sq.completed ? '#6366f1' : 'none',
           border: `2px solid ${sq.completed ? '#6366f1' : theme.borderStrong}`,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 0,
+          padding: 0, transition: 'all 0.15s',
         }}
       >
         {sq.completed && (
-          <span style={{ fontSize: 8, color: '#fff', fontWeight: 700, lineHeight: 1 }}>✓</span>
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         )}
       </button>
 
       {/* Title */}
       <span style={{
-        flex: 1, fontSize: 11, color: sq.completed ? theme.textFaint : theme.textSecondary,
+        flex: 1, fontSize: 13,
+        fontWeight: sq.completed ? 400 : 500,
+        color: sq.completed ? theme.textFaint : theme.textSecondary,
         textDecoration: sq.completed ? 'line-through' : 'none',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         lineHeight: 1.4,
@@ -207,8 +212,8 @@ function SideQuestRow({ sq, theme, onToggle, onDelete }) {
         <button
           onClick={onDelete}
           style={{
-            background: 'none', border: 'none', padding: '0 2px',
-            color: theme.textFaint, fontSize: 11, cursor: 'pointer', lineHeight: 1,
+            background: 'none', border: 'none', padding: '0 3px',
+            color: theme.textFaint, fontSize: 13, cursor: 'pointer', lineHeight: 1,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = theme.textFaint; }}

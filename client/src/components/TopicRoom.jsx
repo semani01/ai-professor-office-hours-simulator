@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTheme } from '../context/ThemeContext';
 import { ElectronIcon } from './ElectronIcon';
+import { useChat } from '../hooks/useChat';
 
 function getTier(topic) {
   if (topic.manualTier) return topic.manualTier;
@@ -528,7 +529,7 @@ function MindMapTab({ mindMap, tag, loading, onRefresh }) {
 // ────────────────────────────────────────────────────────────
 // Main TopicRoom
 // ────────────────────────────────────────────────────────────
-export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierChange, flashcardCache, contentCache }) {
+export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierChange, flashcardCache, contentCache, studySessionId }) {
   const { theme } = useTheme();
   const [tier, setTier] = useState(() => getTier(topic));
   const ts = TIER_STYLE[tier];
@@ -548,11 +549,41 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
     setAiCardsState(cards);
   }
 
-  // Scoped chat
-  const [chatMessages, setChatMessages] = useState([]);
+  // Persistent topic conversation — auto-create hidden conversation scoped to this topic
+  const [topicConvId, setTopicConvId] = useState(null);
+  const topicConvIdRef = useRef(null);
+  useEffect(() => { topicConvIdRef.current = topicConvId; }, [topicConvId]);
+
+  useEffect(() => {
+    if (!courseId || !token) return;
+    const convTitle = `__topic__${topic.tag}`;
+    fetch(`/api/conversations?courseId=${courseId}&includeHidden=true`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then(async (data) => {
+        const existing = (data.conversations || []).find((c) => c.title === convTitle);
+        if (existing) {
+          setTopicConvId(existing.id);
+        } else {
+          const res = await fetch('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ courseId, title: convTitle }),
+          });
+          const created = await res.json();
+          if (created.conversation) setTopicConvId(created.conversation.id);
+        }
+      })
+      .catch(() => {});
+  }, [courseId, token, topic.tag]);
+
+  // Persistent chat via useChat (loads history automatically when topicConvId is set)
+  const { messages: chatMessages, loading: chatLoading, sendMessage: chatSend, resetMessages: resetChat } = useChat(
+    courseId, token, null, topicConvId, topicConvIdRef, studySessionId
+  );
+
   const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const sessionId = useRef(crypto.randomUUID()).current;
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -563,7 +594,6 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
   useEffect(() => {
     const newTier = getTier(topic);
     setTier(newTier);
-    setChatMessages([]);
     setChatInput('');
     // Restore flashcards from cache (or clear) when topic changes
     setAiCardsState(flashcardCache?.current?.[`${courseId}_${topic.tag}`] ?? null);
@@ -617,25 +647,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
     if (!text || chatLoading) return;
     setChatInput('');
     if (textareaRef.current) textareaRef.current.style.height = '24px';
-    const userMsg = { role: 'user', content: text };
-    setChatMessages((prev) => [...prev, userMsg]);
-    setChatLoading(true);
-    try {
-      const history = chatMessages.slice(-8);
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: `[Topic: ${topic.tag}] ${text}`, history, sessionId, courseId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Chat failed');
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: data.response }]);
-      if (onNewBadges && data.newBadges?.length > 0) onNewBadges(data.newBadges);
-    } catch (err) {
-      setChatMessages((prev) => [...prev, { role: 'error', content: err.message }]);
-    } finally {
-      setChatLoading(false);
-    }
+    await chatSend(text, { onNewBadges, topicContext: topic.tag });
   }
 
   function handleChatKey(e) {
@@ -647,6 +659,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
 
   const TABS = [
     { id: 'overview',   label: '📖 Overview' },
+    { id: 'chat',       label: '💬 Chat' },
     { id: 'flashcards', label: '🃏 Flashcards' },
     { id: 'mindmap',    label: '🗺 Mind Map' },
   ];
@@ -781,41 +794,56 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
               </>
             )}
 
-            {/* Scoped chat */}
-            {chatMessages.length > 0 && (
-              <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 0, marginTop: 4 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Chat about this topic</div>
-                {chatMessages.map((msg, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
-                    {msg.role === 'assistant' && (
-                      <div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, background: 'linear-gradient(135deg,#1e1b4b,#312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 8, marginTop: 2, border: '1px solid #4c1d95' }}><ElectronIcon size={15} color="#a78bfa" /></div>
-                    )}
-                    <div style={{
-                      maxWidth: '80%', padding: '10px 14px',
-                      borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      fontSize: 13, lineHeight: 1.6,
-                      ...(msg.role === 'user'
-                        ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff' }
-                        : msg.role === 'error'
-                        ? { background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }
-                        : { background: theme.bgCard, border: `1px solid ${theme.border}`, color: theme.textBody }),
-                    }}>
-                      {msg.role === 'assistant' ? <div className="prose-chat"><ReactMarkdown>{msg.content}</ReactMarkdown></div> : msg.content}
-                    </div>
-                  </div>
-                ))}
-                {chatLoading && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#1e1b4b,#312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #4c1d95' }}><ElectronIcon size={15} color="#a78bfa" /></div>
-                    <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: '16px 16px 16px 4px', padding: '10px 14px', display: 'flex', gap: 4, alignItems: 'center' }}>
-                      {[0, 150, 300].map((d) => <span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.textFaint, animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${d}ms` }} />)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
             <div ref={bottomRef} />
           </>
+        )}
+
+        {/* ── CHAT ── */}
+        {activeTab === 'chat' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, paddingBottom: 8 }}>
+              {chatMessages.length === 0 && !chatLoading && (
+                <div style={{ textAlign: 'center', paddingTop: 40, color: theme.textFaint, fontSize: 13 }}>
+                  Ask anything about <strong style={{ color: theme.textSecondary }}>{topic.tag}</strong>
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
+                  {msg.role === 'assistant' && (
+                    <div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, background: 'linear-gradient(135deg,#1e1b4b,#312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 8, marginTop: 2, border: '1px solid #4c1d95' }}>
+                      <ElectronIcon size={15} color="#a78bfa" />
+                    </div>
+                  )}
+                  <div style={{
+                    maxWidth: '80%', padding: '10px 14px',
+                    borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    fontSize: 13, lineHeight: 1.6,
+                    ...(msg.role === 'user'
+                      ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff' }
+                      : msg.role === 'error'
+                      ? { background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }
+                      : { background: theme.bgCard, border: `1px solid ${theme.border}`, color: theme.textBody }),
+                  }}>
+                    {msg.role === 'assistant'
+                      ? <div className="prose-chat"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                      : msg.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#1e1b4b,#312e81)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #4c1d95' }}>
+                    <ElectronIcon size={15} color="#a78bfa" />
+                  </div>
+                  <div style={{ background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: '16px 16px 16px 4px', padding: '10px 14px', display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {[0, 150, 300].map((d) => <span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.textFaint, animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${d}ms` }} />)}
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          </div>
         )}
 
         {/* ── FLASHCARDS ── */}
@@ -843,8 +871,8 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
         )}
       </div>
 
-      {/* Chat input — overview only */}
-      {activeTab === 'overview' && (
+      {/* Chat input — chat tab only */}
+      {activeTab === 'chat' && (
         <div style={{ borderTop: `1px solid ${theme.border}`, padding: '12px 20px', background: theme.bgSurface, flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', background: theme.bgInput, border: `1px solid ${theme.borderStrong}`, borderRadius: 12, padding: '6px 6px 6px 14px' }}>
             <textarea
@@ -868,6 +896,9 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
               style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: chatLoading || !chatInput.trim() ? theme.border : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: chatLoading || !chatInput.trim() ? theme.textFaint : '#fff', cursor: chatLoading || !chatInput.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0, transition: 'all 0.15s' }}
             >{chatLoading ? '⏳' : '↑'}</button>
           </div>
+          <p style={{ fontSize: 11, color: theme.border, textAlign: 'center', margin: '6px 0 0' }}>
+            Enter to send · Shift+Enter for new line
+          </p>
         </div>
       )}
     </div>
