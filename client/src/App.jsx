@@ -36,6 +36,10 @@ function AppContent({ session, signOut }) {
   });
   const [newBadgeKeys, setNewBadgeKeys] = useState([]);
   const conversationIdRef = useRef(null);
+  // flashcardCacheRef: { [courseId_tag]: Card[] } — survives topic/back navigation
+  const flashcardCacheRef = useRef({});
+  // topicContentCacheRef: { [courseId_tag_tier]: ContentObject } — avoids re-fetching unchanged content
+  const topicContentCacheRef = useRef({});
 
   const resetMessagesRef = useRef(null);
 
@@ -347,6 +351,8 @@ function AppContent({ session, signOut }) {
               onBack={() => setActiveTopic(null)}
               onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
               onTierChange={handleTierChange}
+              flashcardCache={flashcardCacheRef}
+              contentCache={topicContentCacheRef}
             />
           ) : (
             <ChatPanel

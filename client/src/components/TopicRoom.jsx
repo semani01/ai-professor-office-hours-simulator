@@ -72,11 +72,10 @@ function Section({ icon, title, children }) {
 // ────────────────────────────────────────────────────────────
 // Flashcards tab — generate on demand, 3D flip, custom cards
 // ────────────────────────────────────────────────────────────
-function FlashcardsTab({ courseId, topicTag, tier, token }) {
+function FlashcardsTab({ courseId, topicTag, tier, token, aiCards, setAiCards }) {
   const { theme } = useTheme();
   const STORAGE_KEY = `maieutic_fc_${courseId}_${topicTag}`;
 
-  const [aiCards, setAiCards] = useState(null);       // null = not yet generated
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
   const [customCards, setCustomCards] = useState(() => {
@@ -431,10 +430,12 @@ function MindMapTab({ mindMap, tag, loading, onRefresh }) {
   }
 
   return (
-    <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+    <div style={{ overflow: 'auto', cursor: 'grab', userSelect: 'none' }}>
       <svg
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        style={{ width: '100%', minWidth: SVG_W, maxWidth: SVG_W + 40, display: 'block', margin: '0 auto' }}
+        width={SVG_W}
+        height={SVG_H}
+        style={{ display: 'block' }}
       >
         {/* Root node */}
         <rect x={rootX} y={rootY} width={ROOT_W} height={NODE_H} rx={10}
@@ -526,15 +527,25 @@ function MindMapTab({ mindMap, tag, loading, onRefresh }) {
 // ────────────────────────────────────────────────────────────
 // Main TopicRoom
 // ────────────────────────────────────────────────────────────
-export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierChange }) {
+export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierChange, flashcardCache, contentCache }) {
   const { theme } = useTheme();
   const [tier, setTier] = useState(() => getTier(topic));
   const ts = TIER_STYLE[tier];
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [content, setContent] = useState(null);
-  const [loadingContent, setLoadingContent] = useState(true);
+  // Initialize from cache so re-opens are instant
+  const ccKey = `${courseId}_${topic.tag}_${getTier(topic)}`;
+  const [content, setContent] = useState(() => contentCache?.current?.[ccKey] ?? null);
+  const [loadingContent, setLoadingContent] = useState(() => !contentCache?.current?.[ccKey]);
   const [contentError, setContentError] = useState(null);
+
+  // aiCards: initialized from App-level cache ref so it survives back-navigation and topic switching
+  const fcKey = `${courseId}_${topic.tag}`;
+  const [aiCards, setAiCardsState] = useState(() => flashcardCache?.current?.[fcKey] ?? null);
+  function setAiCards(cards) {
+    if (flashcardCache?.current) flashcardCache.current[fcKey] = cards;
+    setAiCardsState(cards);
+  }
 
   // Scoped chat
   const [chatMessages, setChatMessages] = useState([]);
@@ -549,13 +560,30 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
   }, [chatMessages, chatLoading]);
 
   useEffect(() => {
-    setTier(getTier(topic));
+    const newTier = getTier(topic);
+    setTier(newTier);
     setChatMessages([]);
     setChatInput('');
+    // Restore flashcards from cache (or clear) when topic changes
+    setAiCardsState(flashcardCache?.current?.[`${courseId}_${topic.tag}`] ?? null);
+    // Restore overview content from cache — no flash, no spinner if already loaded
+    const cached = contentCache?.current?.[`${courseId}_${topic.tag}_${newTier}`] ?? null;
+    setContent(cached);
+    setLoadingContent(!cached);
   }, [topic.tag]);
 
   async function loadContent(tierOverride) {
     const useTier = tierOverride ?? tier;
+    const key = `${courseId}_${topic.tag}_${useTier}`;
+
+    // Cache hit — serve instantly, no fetch needed
+    if (contentCache?.current?.[key]) {
+      setContent(contentCache.current[key]);
+      setLoadingContent(false);
+      setContentError(null);
+      return;
+    }
+
     setLoadingContent(true);
     setContentError(null);
     setContent(null);
@@ -566,6 +594,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load');
+      if (contentCache?.current) contentCache.current[key] = data;  // write to cache
       setContent(data);
     } catch (err) {
       setContentError(err.message);
@@ -685,7 +714,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ flex: 1, overflow: activeTab === 'mindmap' ? 'hidden' : 'auto', padding: activeTab === 'mindmap' ? 0 : '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {contentError && (
           <div style={{ padding: '16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
@@ -795,17 +824,21 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
             topicTag={topic.tag}
             tier={tier}
             token={token}
+            aiCards={aiCards}
+            setAiCards={setAiCards}
           />
         )}
 
         {/* ── MIND MAP ── */}
         {activeTab === 'mindmap' && (
-          <MindMapTab
-            loading={loadingContent}
-            mindMap={content?.mindMap}
-            tag={topic.tag}
-            onRefresh={() => loadContent()}
-          />
+          <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+            <MindMapTab
+              loading={loadingContent}
+              mindMap={content?.mindMap}
+              tag={topic.tag}
+              onRefresh={() => loadContent()}
+            />
+          </div>
         )}
       </div>
 
