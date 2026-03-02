@@ -351,19 +351,32 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
-### [Date] — Phase 7: Deployment
+### 2026-03-02 — Phase 7: Deployment
 
 **Built:**
--
+- Backend deployed to Railway — Node.js service, root directory `server/`, start command `node src/index.js`
+- Frontend deployed to Vercel — `vercel.json` at repo root handles build (`npm --prefix client install && npm --prefix client run build`), output `client/dist`, SPA rewrite rule for React Router
+- Production branch on Vercel set to `feat/phase-7-deployment`; Railway auto-deploys on push to same branch
+- All 5 Railway env vars set: `NODE_ENV`, `FRONTEND_URL`, `CLAUDE_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`
+- All 3 Vercel env vars set: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 
 **Decisions:**
--
+- Railway chosen over Render for backend — Railway auto-detects Node.js via Nixpacks, zero config for start command
+- `vercel.json` at repo root (not inside `client/`) handles build with `--prefix client` — avoids setting Root Directory in Vercel dashboard which would double the path
+- `FRONTEND_URL` set without trailing slash — Express CORS origin matching is exact string comparison; trailing slash causes every request to fail
 
 **Problems:**
--
+- **dotenv overriding Railway env vars**: `.env` file contains placeholder values (`your_claude_api_key_here`). `require('dotenv').config()` was running first and overwriting Railway's real vars. Fix: `require('dotenv').config({ override: false })` — Railway vars win.
+- **304 responses on all API routes**: Express ETag caching was returning 304 Not Modified for identical GET responses. Fix: `app.set('etag', false)`.
+- **`app.options('*', cors())` crash**: Express v5 upgraded to `path-to-regexp` v8, which no longer accepts bare `*` as a route pattern — throws `PathError: Missing parameter name at index 1: *` on startup. Fix: removed the line entirely — `app.use(cors({...}))` already handles OPTIONS preflight requests; the separate `app.options` line was redundant.
+- **Vercel double-path error**: Setting Root Directory to `client` in Vercel dashboard while `vercel.json` had `--prefix client` in build command caused path doubling: `/vercel/path0/client/client/package.json`. Fix: leave Root Directory as repo root, let `vercel.json` handle the `client/` prefix.
+- **Railway cache serving stale build**: Even after pushing the `app.options` fix, Railway kept deploying the cached Docker layer. Fix: delete and recreate the Railway service from scratch to force a clean build.
+- **CORS blocking requests**: `FRONTEND_URL` had a trailing slash in Railway vars. Origin header from browser (`https://...vercel.app`) didn't match (`https://...vercel.app/`). Fix: removed trailing slash.
+- **Vercel deploying from `main` instead of fix branch**: Vercel was set to track `main` which had older code. Fix: changed production branch tracking to `feat/phase-7-deployment` in Vercel Settings → Git.
 
-**Live URL:**
--
+**Live URLs:**
+- Frontend: https://ai-professor-office-hours-simulator.vercel.app
+- Backend: https://ai-professor-office-hours-simulator-production.up.railway.app
 
 ---
 

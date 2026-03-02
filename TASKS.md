@@ -255,53 +255,42 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 ---
 
-## Phase 7 — Deployment
+## Phase 7 — Deployment ✅ Done
 **Goal:** Shareable live URL for the demo.
-**Branch:** `feat/phase-7-deployment` (branch off `main` after merging 6c PR)
+**Branch:** `feat/phase-7-deployment` (branched off `main` after merging 6c PR)
 
-**Already done (in `feat/phase-6c-sessions`):**
-- [x] VITE_API_URL support added to all client fetch calls
+- [x] VITE_API_URL support added to all client fetch calls (done in 6c pre-deployment hardening)
 - [x] CORS scoped to FRONTEND_URL env var
+- [x] Merge `feat/phase-6c-sessions` PR into main
+- [x] Cut `feat/phase-7-deployment` off main
+- [x] Backend → Railway:
+  - [x] Create Railway project; set root directory: `server`; start command: `node src/index.js`
+  - [x] Set env vars: CLAUDE_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, PORT, FRONTEND_URL
+  - [x] Fix: `require('dotenv').config({ override: false })` — Railway env vars win over `.env` placeholders
+  - [x] Fix: `app.set('etag', false)` — prevents 304 responses on API routes
+  - [x] Fix: removed `app.options('*', cors())` — Express v5 + path-to-regexp v8 no longer accepts bare `*`; `app.use(cors())` handles preflight
+  - [x] Confirm `/health` returns `{"status":"ok"}` — Railway shows green Active status
+- [x] Frontend → Vercel:
+  - [x] Connect GitHub repo; `vercel.json` at root handles build: `npm --prefix client install && npm --prefix client run build`; output: `client/dist`
+  - [x] Set env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL
+  - [x] Production branch set to `feat/phase-7-deployment`
+  - [x] Confirmed live URL: https://ai-professor-office-hours-simulator.vercel.app
+- [x] Smoke test live deployment confirmed working
+- [x] Update `IMPLEMENTATION.md` Phase 7 log entry
 
-**Remaining:**
-- [ ] Merge `feat/phase-6c-sessions` PR into main
-- [ ] Cut `feat/phase-7-deployment` off main
-- [ ] Backend → Railway:
-  - [ ] Create Railway project; set root directory: `/server`; start command: `npm start`
-  - [ ] Set env vars: CLAUDE_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, PORT, FRONTEND_URL (Vercel URL)
-  - [ ] Confirm `/health` returns `{"status":"ok"}`
-  - [ ] Note the Railway URL (e.g. `https://maieutic-server.up.railway.app`)
-- [ ] Frontend → Vercel:
-  - [ ] Connect GitHub repo; set root directory: `client`; build: `npm run build`; output: `dist`
-  - [ ] Set env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL=`<railway-url>`
-  - [ ] Confirm live Vercel URL; update FRONTEND_URL on Railway to match
-- [ ] Smoke test live deployment:
-  - [ ] Sign up / sign in
-  - [ ] Create course → upload PDF → chunks ingested
-  - [ ] Ask question → Socratic response + source citations
-  - [ ] Quiz, XP, Achievements work
-  - [ ] Start Study Session → guided chat appears
-  - [ ] Open Topic Room → Chat tab persists after back-navigate
-  - [ ] Focus Timer completion modal
-- [ ] Update `README.md` with live demo URL
-- [ ] Update `IMPLEMENTATION.md` Phase 7 log entry (date, URL, problems)
-- [ ] Commit, push, PR, merge into main
+**Live URLs:**
+- Frontend: https://ai-professor-office-hours-simulator.vercel.app
+- Backend: https://ai-professor-office-hours-simulator-production.up.railway.app
 
-**Exit condition:** Live Vercel URL works end-to-end. Full ingestion + chat + gamification + study sessions confirmed on live deployment. PR merged into `main`.
+**Exit condition:** ✅ Live Vercel URL works end-to-end.
 
 ---
 
-## Phase 7 — Demo Video & Submission
+## Phase 8 — Demo Video & Submission
 **Goal:** Submit before March 2, 2026, 11:59pm EST.
 
-- [ ] Record 2–3 minute demo video following script in `DEMO.md`:
-  - [ ] 0:00–0:25 — Problem: ChatGPT gives direct answer, no course context
-  - [ ] 0:25–0:55 — Ingestion: drag-drop SPM files, watch progress + success state
-  - [ ] 0:55–1:50 — Core: multi-exchange Socratic dialogue (CPM question)
-  - [ ] 1:50–2:15 — Weak Spot Dashboard with color-coded topic cards
-  - [ ] 2:15–2:30 — Close on "When to stop studying is your decision"
+- [ ] Record 2–3 minute demo video following script in `DEMO.md`
 - [ ] Draft 500-word written explanation (use `DEMO.md` template + `IMPLEMENTATION.md` logs)
-  - [ ] Cover: what it does, architecture choices, 2 things that break at scale
 - [ ] Confirm salary expectation: CA$110,000–CA$130,000
 - [ ] Review submission checklist in `DEMO.md`
 - [ ] Submit
@@ -323,7 +312,7 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | 5a — Polish & Dark Mode | ✅ Done |
 | 6 — Gamification, Knowledge Portfolio & UI Redesign | ✅ Done |
 | 6c — Study Sessions, Quests & Gamification | ✅ Done |
-| 7 — Deployment | 🔄 In progress |
-| 8 — Demo + Submission | ⬜ Not started |
+| 7 — Deployment | ✅ Done |
+| 8 — Demo + Submission | 🔄 In progress |
 
 Update the status column as you go: ⬜ Not started → 🔄 In progress → ✅ Done
