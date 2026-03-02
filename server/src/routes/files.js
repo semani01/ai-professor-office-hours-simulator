@@ -1,9 +1,6 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const { getAuthClient, extractJwt, getUserId } = require('../db/supabaseWithAuth');
-
-const STORED_DIR = path.join(__dirname, '../../uploads/stored');
 
 const router = express.Router();
 
@@ -121,8 +118,8 @@ router.get('/files/:courseId/raw', async (req, res) => {
 
 /**
  * GET /api/files/:courseId/download?sourceFile=<encoded>
- * Streams the original uploaded file back to the client.
- * Only accessible to the authenticated user who uploaded it.
+ * Returns a short-lived Supabase Storage signed URL for the original file.
+ * Redirects the client (iframes follow redirects automatically).
  */
 router.get('/files/:courseId/download', async (req, res) => {
   // iframes can't send Authorization headers, so also accept ?token= query param
@@ -138,13 +135,19 @@ router.get('/files/:courseId/download', async (req, res) => {
 
   // Sanitize: strip any path components so callers can't traverse directories
   const safeName = path.basename(sourceFile);
-  const filePath = path.join(STORED_DIR, userId, courseId, safeName);
+  const storagePath = `${userId}/${courseId}/${safeName}`;
 
-  if (!fs.existsSync(filePath)) {
+  const db = getAuthClient(jwt);
+  const { data, error } = await db.storage
+    .from('uploads')
+    .createSignedUrl(storagePath, 60); // 60-second expiry
+
+  if (error || !data?.signedUrl) {
     return res.status(404).json({ error: 'File not found. It may have been uploaded before file storage was enabled.' });
   }
 
-  res.sendFile(filePath);
+  // Redirect — iframes and browser fetches both follow 302 redirects
+  return res.redirect(data.signedUrl);
 });
 
 module.exports = router;
