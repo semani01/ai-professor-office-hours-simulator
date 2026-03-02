@@ -20,7 +20,7 @@ export function AchievementsButton({ token, newBadgeKeys = [] }) {
 
   useEffect(() => {
     if (!token) return;
-    fetch('/api/achievements', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/achievements', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => {
         setBadges(data.badges || []);

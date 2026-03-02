@@ -175,7 +175,7 @@ async function countPriorExchanges(sessionId, topicTag, userId, jwt) {
  * @param {string} jwt - Supabase access token
  * @returns {Promise<{ response: string, sources: { sourceFile, sourceType, weekNumber, excerpt }[] }>}
  */
-async function generateResponse(message, history, chunks, sessionId, userId, jwt, courseId) {
+async function generateResponse(message, history, chunks, sessionId, userId, jwt, courseId, studySessionId) {
   const contextBlock = formatChunks(chunks);
 
   const recentHistory = (history || [])
@@ -222,6 +222,7 @@ async function generateResponse(message, history, chunks, sessionId, userId, jwt
         const db = getAuthClient(jwt);
         const { error } = await db.from('interactions').insert({
           session_id: sessionId,
+          study_session_id: studySessionId || null,
           topic_tag: topicTag,
           question: message,
           hints_needed: prior,

@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 
-export function useChat(courseId, token, onXpEarned, conversationId, conversationIdRef) {
+export function useChat(courseId, token, onXpEarned, conversationId, conversationIdRef, onAutoConversation, studySessionId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   // Generate sessionId once per mount and keep it stable
   const sessionId = useRef(crypto.randomUUID()).current;
+  // Track if first message was sent to avoid creating multiple conversations
+  const createdConvRef = useRef(false);
 
   // Load messages from DB when conversationId changes
   useEffect(() => {
@@ -16,7 +18,7 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
       return;
     }
     setLoadingHistory(true);
-    fetch(`/api/conversations/${conversationId}/messages`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${conversationId}/messages`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -33,7 +35,7 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
       .finally(() => setLoadingHistory(false));
   }, [conversationId, token]);
 
-  async function sendMessage(text, { onNewBadges, topicContext } = {}) {
+  async function sendMessage(text, { onNewBadges, topicContext, isSystem } = {}) {
     if (!text.trim()) return;
 
     const userMsg = { role: 'user', content: text };
@@ -46,13 +48,34 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
     const messageToSend = topicContext ? `[Topic: ${topicContext}] ${text}` : text;
 
     try {
-      const res = await fetch('/api/chat', {
+      // Auto-create conversation if not yet created and no conversationId exists
+      let convId = conversationIdRef ? conversationIdRef.current : conversationId;
+      if (!convId && !isSystem && !createdConvRef.current) {
+        createdConvRef.current = true;
+        try {
+          const createRes = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ courseId }),
+          });
+          const createData = await createRes.json();
+          if (createData.conversation) {
+            convId = createData.conversation.id;
+            if (conversationIdRef) conversationIdRef.current = convId;
+            if (onAutoConversation) onAutoConversation(convId);
+          }
+        } catch {
+          // If auto-create fails, continue without persisting
+        }
+      }
+
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: messageToSend, history, sessionId, courseId }),
+        body: JSON.stringify({ message: messageToSend, history, sessionId, courseId, studySessionId: studySessionId || null }),
       });
       const data = await res.json();
 
@@ -63,15 +86,14 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
       if (onXpEarned) onXpEarned();
       if (onNewBadges && data.newBadges?.length > 0) onNewBadges(data.newBadges);
 
-      // Persist messages to DB using the ref for always-current conversationId
-      const convId = conversationIdRef ? conversationIdRef.current : conversationId;
+      // Persist messages to DB if we have a conversation ID
       if (convId) {
         const base = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
-        fetch(`/api/conversations/${convId}/messages`, {
+        fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${convId}/messages`, {
           ...base, method: 'POST',
           body: JSON.stringify({ role: 'user', content: text }),
         }).then(() =>
-          fetch(`/api/conversations/${convId}/messages`, {
+          fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${convId}/messages`, {
             ...base, method: 'POST',
             body: JSON.stringify({ role: 'assistant', content: data.response, sources: data.sources || [] }),
           })

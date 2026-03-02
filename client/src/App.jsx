@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { useQuests } from './hooks/useQuests';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthGate } from './components/AuthGate';
 import { CourseTabs } from './components/CourseTabs';
@@ -15,6 +16,34 @@ import { TopicRoom } from './components/TopicRoom';
 import { ElectronIcon } from './components/ElectronIcon';
 import { UserMenu } from './components/UserMenu';
 import { DeleteCourseDialog } from './components/DeleteCourseDialog';
+import StudySessionModal from './components/StudySessionModal';
+import { ActiveSessionBanner } from './components/ActiveSessionBanner';
+import { SessionSummaryPanel } from './components/SessionSummaryPanel';
+import { WelcomeBackPanel } from './components/WelcomeBackPanel';
+import { QuestPanel } from './components/QuestPanel';
+import { SideQuestPanel } from './components/SideQuestPanel';
+import { FocusTimer } from './components/FocusTimer';
+
+const INTENT_LABELS = {
+  general: 'General Study',
+  exam_prep: 'Exam Prep',
+  assignment: 'Assignment',
+  review_weak: 'Review Weak Spots',
+  explore_new: 'Explore New Topics',
+};
+
+function makeDragHandler(setter, direction, min, max) {
+  return function onMouseDown(e) {
+    e.preventDefault();
+    const onMove = (ev) => setter((w) => Math.max(min, Math.min(max, w + ev.movementX * direction)));
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+}
 
 function AppContent({ session, signOut }) {
   const token = session?.access_token;
@@ -25,7 +54,6 @@ function AppContent({ session, signOut }) {
   const [activeCourseId, setActiveCourseId] = useState(null);
   const [coursesError, setCoursesError] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [sessionId, setSessionId] = useState(null);
   const [topicsVersion, setTopicsVersion] = useState(0);
   const [viewingFile, setViewingFile] = useState(null);
   const [quizOpen, setQuizOpen] = useState(false);
@@ -34,33 +62,51 @@ function AppContent({ session, signOut }) {
   const [portfolioVersion, setPortfolioVersion] = useState(0);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [activeTopic, setActiveTopic] = useState(null);
-  // pendingDelete: { id, name } — course queued for archive confirmation
   const [pendingDelete, setPendingDelete] = useState(null);
-  // manualTiers: { [courseId_tag]: tier } — user's self-assessment overrides, persisted to localStorage
   const [manualTiers, setManualTiers] = useState(() => {
     try { return JSON.parse(localStorage.getItem('maieutic_manual_tiers') || '{}'); } catch { return {}; }
   });
   const [newBadgeKeys, setNewBadgeKeys] = useState([]);
-  const conversationIdRef = useRef(null);
-  // flashcardCacheRef: { [courseId_tag]: Card[] } — survives topic/back navigation
-  const flashcardCacheRef = useRef({});
-  // topicContentCacheRef: { [courseId_tag_tier]: ContentObject } — avoids re-fetching unchanged content
-  const topicContentCacheRef = useRef({});
 
+  // Panel widths (resizable)
+  const [leftWidth, setLeftWidth] = useState(() => parseInt(localStorage.getItem('maieutic_left_w') || '240', 10));
+  const [rightWidth, setRightWidth] = useState(() => parseInt(localStorage.getItem('maieutic_right_w') || '260', 10));
+  useEffect(() => { localStorage.setItem('maieutic_left_w', leftWidth); }, [leftWidth]);
+  useEffect(() => { localStorage.setItem('maieutic_right_w', rightWidth); }, [rightWidth]);
+  const onLeftHandleDrag = makeDragHandler(setLeftWidth, 1, 180, 400);
+  const onRightHandleDrag = makeDragHandler(setRightWidth, -1, 200, 420);
+
+  // Study session state
+  const [activeStudySession, setActiveStudySession] = useState(null);
+  const [showSessionSetup, setShowSessionSetup] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState(null);
+  const [welcomeBackSummary, setWelcomeBackSummary] = useState(null);
+  const [endingSession, setEndingSession] = useState(false);
+  // quiz results accumulated during this session (passed to end-session endpoint)
+  const sessionQuizResultsRef = useRef([]);
+  // ref to send a message programmatically into the active ChatPanel
+  const sendMessageRef = useRef(null);
+
+  // Quests
+  const { quests, adoptQuests, updateQuestStatus, deleteQuest, checkQuestCompletion } =
+    useQuests(activeCourseId, token);
+
+  const conversationIdRef = useRef(null);
+  const flashcardCacheRef = useRef({});
+  const topicContentCacheRef = useRef({});
   const resetMessagesRef = useRef(null);
 
-  // Keep ref in sync with state for synchronous access inside sendMessage closure
   useEffect(() => { conversationIdRef.current = activeConversationId; }, [activeConversationId]);
 
   // Load courses on mount
   function loadCourses() {
     setCoursesError(false);
-    fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(async (data) => {
         let list = data.courses || [];
         if (list.length === 0) {
-          const res = await fetch('/api/courses', {
+          const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ name: 'My Course' }),
@@ -79,16 +125,36 @@ function AppContent({ session, signOut }) {
   // Load XP data
   useEffect(() => {
     if (!token) return;
-    fetch('/api/xp', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/xp', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { if (!data.error) setXpData(data); })
       .catch(() => {});
   }, [token, xpVersion]);
 
-  // When active course changes, reset files + session + conversation + topic room
+  // On mount: check for an existing active session (browser-close recovery)
+  useEffect(() => {
+    if (!token) return;
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/study-sessions/active', { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => { if (data.session) setActiveStudySession(data.session); })
+      .catch(() => {});
+  }, [token]);
+
+  // Check for welcome-back summary once course is loaded and no active session running
+  useEffect(() => {
+    if (!token || !activeCourseId || activeStudySession) return;
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/study-sessions/latest-summary?courseId=${activeCourseId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => { if (data.summary) setWelcomeBackSummary(data.summary); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, activeCourseId]);
+
+  // When active course changes, reset local state
   useEffect(() => {
     setUploadedFiles([]);
-    setSessionId(null);
     setTopicsVersion(0);
     setActiveConversationId(null);
     setActiveTopic(null);
@@ -108,7 +174,7 @@ function AppContent({ session, signOut }) {
   }
 
   async function handleCreateCourse(name) {
-    const res = await fetch('/api/courses', {
+    const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name }),
@@ -121,7 +187,7 @@ function AppContent({ session, signOut }) {
   }
 
   async function handleRenameCourse(courseId, name) {
-    const res = await fetch(`/api/courses/${courseId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/courses/${courseId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name }),
@@ -133,15 +199,13 @@ function AppContent({ session, signOut }) {
   }
 
   async function handleDeleteCourse(courseId) {
-    await fetch(`/api/courses/${courseId}`, {
+    await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/courses/${courseId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
     setCourses((prev) => {
       const next = prev.filter((c) => c.id !== courseId);
-      if (activeCourseId === courseId) {
-        setActiveCourseId(next[0]?.id ?? null);
-      }
+      if (activeCourseId === courseId) setActiveCourseId(next[0]?.id ?? null);
       return next;
     });
   }
@@ -161,7 +225,6 @@ function AppContent({ session, signOut }) {
     const updated = { ...manualTiers, [key]: newTier };
     setManualTiers(updated);
     localStorage.setItem('maieutic_manual_tiers', JSON.stringify(updated));
-    // Keep activeTopic in sync so the header badge updates immediately
     setActiveTopic((prev) => prev ? { ...prev, manualTier: newTier } : prev);
   }
 
@@ -169,12 +232,91 @@ function AppContent({ session, signOut }) {
     const key = `${activeCourseId}_${topic.tag}`;
     const override = manualTiers[key];
     setActiveTopic(override ? { ...topic, manualTier: override } : topic);
+    checkQuestCompletion('topic_room_opened', { topicTag: topic.tag });
+  }
+
+  // Build portfolio snapshot for session-end summary
+  function buildPortfolioSnapshot() {
+    return Object.entries(manualTiers)
+      .filter(([k]) => k.startsWith(`${activeCourseId}_`))
+      .map(([k, v]) => ({ tag: k.slice(activeCourseId.length + 1), tier: v }));
+  }
+
+  async function handleSessionStarted(sess) {
+    setActiveStudySession(sess);
+    sessionQuizResultsRef.current = [];
+    setShowSessionSetup(false);
+    // Create a named conversation for this session
+    try {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ courseId: activeCourseId, title: `__session__${sess.id}` }),
+      });
+      const data = await res.json();
+      if (data.conversation) {
+        setActiveConversationId(data.conversation.id);
+      }
+    } catch { /* ignore */ }
+    // After state settles, send guided opening message
+    setTimeout(() => {
+      const plan = sess.study_plan;
+      const steps = plan?.steps || [];
+      let intro = `Let's start your **${INTENT_LABELS[sess.intent] || 'study'}** session! 🎯\n\n`;
+      if (steps.length > 0) {
+        intro += `Here's your plan:\n${steps.map((s, i) => `**${i + 1}.** ${s.action}${s.estimatedMinutes ? ` — ${s.estimatedMinutes} min` : ''}`).join('\n')}\n\n`;
+      }
+      intro += `Type a question to get started, or open a topic from the Knowledge Portfolio on the right.`;
+      sendMessageRef.current?.(intro, { isSystem: true });
+    }, 200);
+    handleXpEarned();
+  }
+
+  async function handleEndSession() {
+    if (!activeStudySession || endingSession) return;
+    setEndingSession(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/study-sessions/${activeStudySession.id}/end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          quizResults: sessionQuizResultsRef.current,
+          portfolioSnapshot: buildPortfolioSnapshot(),
+        }),
+      });
+      const data = await res.json();
+      if (data.summary) setSessionSummary(data.summary);
+    } catch {
+      // session end failed silently — UI still resets below
+    } finally {
+      setActiveStudySession(null);
+      sessionQuizResultsRef.current = [];
+      setEndingSession(false);
+    }
+  }
+
+  // Route quest "Go" clicks to the appropriate UI
+  function handleQuestAction(quest) {
+    const td = quest.target_data || {};
+    if (quest.quest_type === 'topic_room' || quest.quest_type === 'chat') {
+      if (td.topicTag) {
+        const key = `${activeCourseId}_${td.topicTag}`;
+        const override = manualTiers[key];
+        setActiveTopic(override
+          ? { tag: td.topicTag, manualTier: override }
+          : { tag: td.topicTag });
+        // Refresh portfolio to reflect topic interaction
+        handleXpEarned();
+      }
+    } else if (quest.quest_type === 'quiz') {
+      setQuizOpen(true);
+    }
+    if (quest.status === 'pending') updateQuestStatus(quest.id, 'in_progress');
   }
 
   const hasUploads = uploadedFiles.length > 0;
   const activeCourse = courses.find((c) => c.id === activeCourseId);
 
-  // Slice manualTiers to just { [tag]: tier } for the active course
   const tierOverridesForCourse = Object.fromEntries(
     Object.entries(manualTiers)
       .filter(([k]) => k.startsWith(`${activeCourseId}_`))
@@ -183,21 +325,32 @@ function AppContent({ session, signOut }) {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: theme.bgBase }}>
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────── */}
       <header style={{
         borderBottom: `1px solid ${theme.border}`,
         padding: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        background: theme.bgBase,
-        flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: theme.bgBase, flexShrink: 0,
       }}>
-        {/* Logo */}
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, cursor: 'default' }}
+        {/* Logo — clickable button to go home */}
+        <button
+          onClick={() => {
+            setActiveTopic(null);
+            setActiveConversationId(null);
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexShrink: 0,
+            cursor: 'pointer',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+          }}
           onMouseEnter={() => setLogoHovered(true)}
           onMouseLeave={() => setLogoHovered(false)}
+          title="Go to home"
         >
           <div style={{
             width: 28, height: 28, borderRadius: 8,
@@ -209,9 +362,8 @@ function AppContent({ session, signOut }) {
           <span style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
             Maieutic
           </span>
-        </div>
+        </button>
 
-        {/* Divider */}
         <div style={{ width: 1, height: 18, background: theme.border, flexShrink: 0 }} />
 
         {/* Course tabs */}
@@ -226,38 +378,54 @@ function AppContent({ session, signOut }) {
           />
         </div>
 
-        {/* Right section: Quiz Me + XP bar + Achievements + theme + signout */}
+        {/* Right controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {/* Quiz Me button */}
+          {/* Study Session button — hidden while a session is active */}
+          {!activeStudySession && (
+            <button
+              onClick={() => activeCourseId && setShowSessionSetup(true)}
+              disabled={!activeCourseId}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 12px', borderRadius: 8,
+                background: activeCourseId ? 'linear-gradient(135deg, #0f172a, #1e293b)' : theme.border,
+                border: activeCourseId ? '1px solid #4f46e5' : `1px solid ${theme.border}`,
+                color: activeCourseId ? '#c7d2fe' : theme.textFaint,
+                cursor: activeCourseId ? 'pointer' : 'not-allowed',
+                fontSize: 12, fontWeight: 600, transition: 'all 0.15s', flexShrink: 0,
+              }}
+              onMouseEnter={(e) => { if (activeCourseId) e.currentTarget.style.background = 'linear-gradient(135deg, #1e1b4b, #312e81)'; }}
+              onMouseLeave={(e) => { if (activeCourseId) e.currentTarget.style.background = 'linear-gradient(135deg, #0f172a, #1e293b)'; }}
+            >
+              <span>📖</span><span>Study Session</span>
+            </button>
+          )}
+
+          {/* Focus Timer — always available */}
+          <FocusTimer />
+
+          {/* Quiz Me */}
           <button
             onClick={() => activeCourseId && setQuizOpen(true)}
             disabled={!activeCourseId || !hasUploads}
-            title={!hasUploads ? 'Upload materials first to take a quiz' : 'Take a quiz from your materials'}
+            title={!hasUploads ? 'Upload materials first' : 'Take a quiz'}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '5px 12px', borderRadius: 8, border: 'none',
-              background: activeCourseId && hasUploads
-                ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-                : theme.border,
+              background: activeCourseId && hasUploads ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : theme.border,
               color: activeCourseId && hasUploads ? '#fff' : theme.textFaint,
               cursor: activeCourseId && hasUploads ? 'pointer' : 'not-allowed',
               fontSize: 12, fontWeight: 600, transition: 'all 0.15s', flexShrink: 0,
             }}
           >
-            <span>⚡</span>
-            <span>Quiz Me</span>
+            <span>⚡</span><span>Quiz Me</span>
           </button>
 
-          {/* XP bar */}
           <XpBar xpData={xpData} />
-
-          {/* Achievements */}
           <AchievementsButton token={token} newBadgeKeys={newBadgeKeys} />
 
-          {/* Divider */}
           <div style={{ width: 1, height: 18, background: theme.border, flexShrink: 0 }} />
 
-          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
             title={theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -273,7 +441,6 @@ function AppContent({ session, signOut }) {
             {theme.isDark ? '☀️' : '🌙'}
           </button>
 
-          {/* User avatar + menu (sign out + archived courses) */}
           <UserMenu
             email={session?.user?.email}
             token={token}
@@ -286,11 +453,19 @@ function AppContent({ session, signOut }) {
         </div>
       </header>
 
-      {/* 3-column main layout */}
+      {/* ── Active session banner ───────────────────────────────── */}
+      {activeStudySession && (
+        <ActiveSessionBanner
+          session={activeStudySession}
+          onEndSession={handleEndSession}
+        />
+      )}
+
+      {/* ── 3-column layout ────────────────────────────────────── */}
       <main style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left panel — Sources (240px) */}
+        {/* Left panel */}
         <aside style={{
-          width: 240, borderRight: `1px solid ${theme.border}`,
+          width: leftWidth,
           display: 'flex', flexDirection: 'column',
           background: theme.bgSurface, flexShrink: 0, overflow: 'hidden',
         }}>
@@ -300,7 +475,6 @@ function AppContent({ session, signOut }) {
             </div>
           </div>
 
-          {/* Conversation list */}
           {activeCourseId && (
             <div style={{ borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
               <ConversationList
@@ -317,9 +491,7 @@ function AppContent({ session, signOut }) {
           <div style={{ overflowY: 'auto', padding: 14, flex: 1 }}>
             {coursesError ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, paddingTop: 24 }}>
-                <div style={{ fontSize: 12, color: '#f87171', textAlign: 'center' }}>
-                  Failed to load courses.
-                </div>
+                <div style={{ fontSize: 12, color: '#f87171', textAlign: 'center' }}>Failed to load courses.</div>
                 <button
                   onClick={loadCourses}
                   style={{
@@ -329,9 +501,7 @@ function AppContent({ session, signOut }) {
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.borderColor = theme.accent}
                   onMouseLeave={(e) => e.currentTarget.style.borderColor = theme.borderStrong}
-                >
-                  Try again
-                </button>
+                >Try again</button>
               </div>
             ) : activeCourseId ? (
               <FileUpload
@@ -349,7 +519,19 @@ function AppContent({ session, signOut }) {
           </div>
         </aside>
 
-        {/* Center panel — Chat or Topic Room (flex 1) */}
+        {/* Left drag handle */}
+        <div
+          onMouseDown={onLeftHandleDrag}
+          style={{
+            width: 4, flexShrink: 0, cursor: 'col-resize',
+            background: 'transparent', borderRight: `1px solid ${theme.border}`,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#6366f133'; e.currentTarget.style.borderRightColor = '#6366f1'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderRightColor = theme.border; }}
+        />
+
+        {/* Center panel */}
         <section style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           {activeTopic ? (
             <TopicRoom
@@ -361,25 +543,42 @@ function AppContent({ session, signOut }) {
               onTierChange={handleTierChange}
               flashcardCache={flashcardCacheRef}
               contentCache={topicContentCacheRef}
+              studySessionId={activeStudySession?.id ?? null}
             />
           ) : (
             <ChatPanel
               courseId={activeCourseId}
               hasUploads={hasUploads}
-              onSessionId={setSessionId}
               token={token}
               onResetRef={resetMessagesRef}
+              onSendRef={sendMessageRef}
               onXpEarned={handleXpEarned}
               conversationId={activeConversationId}
               conversationIdRef={conversationIdRef}
               onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
+              onAutoConversation={(newConvId) => {
+                setActiveConversationId(newConvId);
+              }}
+              studySessionId={activeStudySession?.id ?? null}
             />
           )}
         </section>
 
-        {/* Right panel — Knowledge Portfolio (260px) */}
+        {/* Right drag handle */}
+        <div
+          onMouseDown={onRightHandleDrag}
+          style={{
+            width: 4, flexShrink: 0, cursor: 'col-resize',
+            background: 'transparent', borderLeft: `1px solid ${theme.border}`,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#6366f133'; e.currentTarget.style.borderLeftColor = '#6366f1'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeftColor = theme.border; }}
+        />
+
+        {/* Right panel — Knowledge Portfolio + Quests + Side Quests */}
         <aside style={{
-          width: 260, borderLeft: `1px solid ${theme.border}`,
+          width: rightWidth,
           display: 'flex', flexDirection: 'column',
           background: theme.bgSurface, flexShrink: 0, overflow: 'hidden',
         }}>
@@ -388,21 +587,35 @@ function AppContent({ session, signOut }) {
               Knowledge Portfolio
             </div>
           </div>
-          <div style={{ overflowY: 'auto', padding: 14, flex: 1 }}>
-            <KnowledgePortfolio
-              courseId={activeCourseId}
-              token={token}
-              topicsVersion={topicsVersion}
-              portfolioVersion={portfolioVersion}
-              xpData={xpData}
-              onTopicClick={handleTopicClick}
-              tierOverrides={tierOverridesForCourse}
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: 14 }}>
+              <KnowledgePortfolio
+                courseId={activeCourseId}
+                token={token}
+                topicsVersion={topicsVersion}
+                portfolioVersion={portfolioVersion}
+                xpData={xpData}
+                onTopicClick={handleTopicClick}
+                tierOverrides={tierOverridesForCourse}
+              />
+            </div>
+
+            <QuestPanel
+              quests={quests}
+              onQuestAction={handleQuestAction}
+              onStatusChange={updateQuestStatus}
+              onDelete={deleteQuest}
             />
+
+            {activeCourseId && (
+              <SideQuestPanel courseId={activeCourseId} token={token} />
+            )}
           </div>
         </aside>
       </main>
 
-      {/* File viewer modal */}
+      {/* ── Overlays ───────────────────────────────────────────── */}
+
       {viewingFile && (
         <FileViewerModal
           file={viewingFile}
@@ -412,26 +625,60 @@ function AppContent({ session, signOut }) {
         />
       )}
 
-      {/* Quiz overlay */}
       {quizOpen && activeCourseId && (
         <QuizMode
           courseId={activeCourseId}
           token={token}
-          onClose={() => { setQuizOpen(false); handleXpEarned(); }}
+          onClose={() => {
+            setQuizOpen(false);
+            handleXpEarned();
+            checkQuestCompletion('quiz_completed', {});
+          }}
           onXpEarned={handleXpEarned}
           onNewBadges={(keys) => setNewBadgeKeys((prev) => [...prev, ...keys])}
         />
       )}
 
-      {/* Delete / archive confirmation dialog */}
       {pendingDelete && (
         <DeleteCourseDialog
           courseName={pendingDelete.name}
-          onConfirm={() => {
-            handleDeleteCourse(pendingDelete.id);
-            setPendingDelete(null);
-          }}
+          onConfirm={() => { handleDeleteCourse(pendingDelete.id); setPendingDelete(null); }}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {showSessionSetup && activeCourseId && (
+        <StudySessionModal
+          courseId={activeCourseId}
+          token={token}
+          onSessionStarted={handleSessionStarted}
+          onClose={() => setShowSessionSetup(false)}
+        />
+      )}
+
+      {sessionSummary && (
+        <SessionSummaryPanel
+          summary={sessionSummary}
+          onClose={() => setSessionSummary(null)}
+          onAdoptQuests={async (actions) => { await adoptQuests(actions); handleXpEarned(); }}
+        />
+      )}
+
+      {welcomeBackSummary && !sessionSummary && (
+        <WelcomeBackPanel
+          summary={welcomeBackSummary}
+          onAdoptQuests={async (actions) => {
+            await adoptQuests(actions);
+            handleXpEarned();
+            setWelcomeBackSummary(null);
+          }}
+          onDismiss={() => {
+            fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/study-sessions/summaries/${welcomeBackSummary.id}/dismiss`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+            }).catch(() => {});
+            setWelcomeBackSummary(null);
+          }}
         />
       )}
     </div>

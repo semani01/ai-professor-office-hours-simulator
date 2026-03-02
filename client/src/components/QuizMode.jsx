@@ -28,7 +28,7 @@ export function QuizMode({ courseId, token, onClose, onXpEarned, onNewBadges }) 
 
   // Load questions on mount
   useEffect(() => {
-    fetch('/api/quiz/generate', {
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/quiz/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ courseId }),
@@ -97,7 +97,7 @@ export function QuizMode({ courseId, token, onClose, onXpEarned, onNewBadges }) 
     setPhase('loading');
     try {
       const finalAnswers = { ...answers };
-      const res = await fetch('/api/quiz/check', {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/quiz/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

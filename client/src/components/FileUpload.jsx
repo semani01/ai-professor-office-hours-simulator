@@ -35,7 +35,7 @@ export function FileUpload({ courseId, onFilesIngested, token, onFileClick }) {
   // Fetch already-uploaded files for this course on mount / course change
   useEffect(() => {
     if (!courseId || !token) return;
-    fetch(`/api/files/${courseId}/list`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/files/${courseId}/list`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

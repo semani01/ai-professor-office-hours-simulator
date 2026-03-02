@@ -12,7 +12,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
   useEffect(() => {
     if (!courseId || !token) { setConversations([]); return; }
     setLoading(true);
-    fetch(`/api/conversations?courseId=${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations?courseId=${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { setConversations(data.conversations || []); })
       .catch(() => {})
@@ -21,7 +21,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
 
   async function handleCreate() {
     if (!courseId) return;
-    const res = await fetch('/api/conversations', {
+    const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ courseId }),
@@ -47,7 +47,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
     const conv = conversations.find((c) => c.id === convId);
     if (name === conv?.title) return;
 
-    const res = await fetch(`/api/conversations/${convId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${convId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ title: name }),
@@ -65,7 +65,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
 
   async function handleDelete(convId, e) {
     e.stopPropagation();
-    await fetch(`/api/conversations/${convId}`, {
+    await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${convId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -86,7 +86,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
   // Sync title when auto-titled from server (poll once after a conversation is active)
   function refreshTitle(convId) {
     if (!convId || !token) return;
-    fetch(`/api/conversations?courseId=${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations?courseId=${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { if (data.conversations) setConversations(data.conversations); })
       .catch(() => {});

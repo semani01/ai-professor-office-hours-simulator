@@ -62,7 +62,7 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
   useEffect(() => {
     if (!courseId || !token) return;
     setHasCourseTopic(null);
-    fetch(`/api/topics/${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/topics/${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => setHasCourseTopic(data.topics?.length > 0))
       .catch(() => setHasCourseTopic(false));
@@ -72,7 +72,7 @@ export function WeakSpotDashboard({ sessionId, courseId, token, topicsVersion })
     if (!sessionId || !token) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/session/${sessionId}/summary`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/session/${sessionId}/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

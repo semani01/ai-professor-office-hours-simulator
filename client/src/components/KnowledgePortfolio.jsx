@@ -101,7 +101,7 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
   // Fetch whether a syllabus has been uploaded
   useEffect(() => {
     if (!courseId || !token) return;
-    fetch(`/api/topics/${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/topics/${courseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => setHasCourseTopic(data.topics?.length > 0))
       .catch(() => setHasCourseTopic(false));
@@ -112,7 +112,7 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
     if (!courseId || !token) return;
     if (showLoading) setLoading(true);
     try {
-      const res = await fetch(`/api/course/${courseId}/summary`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/course/${courseId}/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -134,7 +134,7 @@ export function KnowledgePortfolio({ courseId, token, topicsVersion, portfolioVe
   useEffect(() => {
     if (!courseId || !token) return;
     fetchSummary({ showLoading: true }); // first load shows skeleton
-    const interval = setInterval(() => fetchSummary(), 15_000); // polls silently
+    const interval = setInterval(() => fetchSummary(), 5_000); // polls silently
     return () => clearInterval(interval);
   }, [courseId, token]);
 

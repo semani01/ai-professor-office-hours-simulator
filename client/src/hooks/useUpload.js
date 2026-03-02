@@ -14,7 +14,7 @@ export function useUpload() {
     if (courseId) formData.append('courseId', courseId);
 
     try {
-      const res = await fetch('/api/upload', {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

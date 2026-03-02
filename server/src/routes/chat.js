@@ -14,7 +14,7 @@ const router = express.Router();
  * Response: { response, sources[] }
  */
 router.post('/chat', async (req, res) => {
-  const { message, history, sessionId, courseId } = req.body;
+  const { message, history, sessionId, courseId, studySessionId } = req.body;
 
   if (!message || !message.trim()) {
     return res.status(400).json({ error: 'message is required.' });
@@ -37,7 +37,7 @@ router.post('/chat', async (req, res) => {
     const chunks = await retrieveChunks(message, courseId, userId, jwt);
 
     // 2. Generate Socratic response
-    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt, courseId);
+    const { response, sources } = await generateResponse(message, history || [], chunks, sessionId, userId, jwt, courseId, studySessionId || null);
 
     // 3. Award XP (fire-and-forget) + check achievements (awaited so we can return newBadges)
     awardXp(userId, jwt, XP_PER_MESSAGE).catch((err) =>
