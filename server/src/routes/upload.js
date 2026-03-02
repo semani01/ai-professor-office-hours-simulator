@@ -15,9 +15,6 @@ const router = express.Router();
 const UPLOADS_DIR = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// Permanent storage directory — files persist here for the viewer
-const STORED_DIR = path.join(__dirname, '../../uploads/stored');
-if (!fs.existsSync(STORED_DIR)) fs.mkdirSync(STORED_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
@@ -111,11 +108,19 @@ router.post('/upload', upload.array('files[]'), async (req, res) => {
       const { error: insertError } = await db.from('chunks').insert(rows);
       if (insertError) throw new Error(`Supabase insert failed: ${insertError.message}`);
 
-      // 5. Persist original file for the viewer
-      const storedDir = path.join(STORED_DIR, userId, courseId);
-      if (!fs.existsSync(storedDir)) fs.mkdirSync(storedDir, { recursive: true });
-      const storedPath = path.join(storedDir, fileName);
-      fs.copyFileSync(file.path, storedPath);
+      // 5. Upload original file to Supabase Storage for the viewer
+      const fileBuffer = fs.readFileSync(file.path);
+      const storagePath = `${userId}/${courseId}/${fileName}`;
+      const { error: storageError } = await db.storage
+        .from('uploads')
+        .upload(storagePath, fileBuffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+      if (storageError) {
+        console.error(`[upload] storage upload failed: ${storageError.message}`);
+        // non-fatal — chunks are still usable, just viewer won't work
+      }
 
       console.log(`[upload] ingested "${fileName}" — ${rows.length} chunks, sourceType="${sourceType}", week=${weekNumber}`);
       ingested.push({ fileName, sourceType, chunkCount: rows.length });
