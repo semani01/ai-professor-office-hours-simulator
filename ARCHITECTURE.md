@@ -1,10 +1,10 @@
-# Architecture — AI Professor Office Hours Simulator
+# Architecture — Maieutic
 
 ---
 
 ## System Overview
 
-AI Professor Office Hours Simulator is a RAG-based (Retrieval-Augmented Generation) application with a pedagogical constraint layer on top. The retrieval infrastructure grounds all AI responses in the student's actual course materials. The constraint layer — enforced through Claude's system prompt — prevents the AI from simply returning answers, forcing it into Socratic interaction instead.
+Maieutic is a RAG-based (Retrieval-Augmented Generation) application with a pedagogical constraint layer on top. The retrieval infrastructure grounds all AI responses in the student's actual course materials. The constraint layer — enforced through Claude's system prompt — prevents the AI from simply returning answers, forcing it into Socratic interaction instead.
 
 The system has three distinct phases of operation:
 

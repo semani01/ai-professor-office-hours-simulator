@@ -1,4 +1,4 @@
-# Prompts — AI Professor Office Hours Simulator
+# Prompts — Maieutic
 
 This document contains the Claude system prompt that governs the tutor's behavior, along with the rationale behind each constraint and notes for tuning.
 

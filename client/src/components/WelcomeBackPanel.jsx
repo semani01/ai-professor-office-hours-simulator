@@ -28,11 +28,15 @@ function timeAgo(dateStr) {
  *   onAdoptQuests fn(arr) — called with selected actions to turn into quests
  *   onDismiss     fn      — dismiss without adopting
  */
-export function WelcomeBackPanel({ summary, onAdoptQuests, onDismiss }) {
+export function WelcomeBackPanel({ summary, existingQuests = [], onAdoptQuests, onDismiss }) {
   const { theme } = useTheme();
   const s = summary?.summary_json || {};
   const session = summary?.study_sessions;
-  const actions = summary?.recommended_actions || [];
+  const existingTitles = new Set((existingQuests || []).map((q) => q.title));
+  const allActions = summary?.recommended_actions || [];
+  // Split into new (addable) and already-added
+  const actions = allActions.filter((a) => !existingTitles.has(a.title));
+  const alreadyAdded = allActions.filter((a) => existingTitles.has(a.title));
   const [selected, setSelected] = useState(() => new Set(actions.map((_, i) => i)));
   const [adopting, setAdopting] = useState(false);
 
@@ -145,6 +149,17 @@ export function WelcomeBackPanel({ summary, onAdoptQuests, onDismiss }) {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Already-added quests notice */}
+          {alreadyAdded.length > 0 && (
+            <div style={{
+              padding: '9px 12px', borderRadius: 9,
+              background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)',
+              fontSize: 12, color: theme.textMuted,
+            }}>
+              ✅ Already in your quests: {alreadyAdded.map((a) => a.title).join(', ')}
             </div>
           )}
 

@@ -1,4 +1,4 @@
-# Implementation Log — AI Professor Office Hours Simulator
+# Implementation Log — Maieutic
 
 This is a running log of what was built in each session, decisions made, and problems encountered. Updated at the end of every build session. This log serves as raw material for the 500-word submission write-up in Phase 7.
 
@@ -36,7 +36,7 @@ Keep entries concise. This is a development journal, not documentation.
 - CommonJS (`require`) used throughout server — avoids ESM compatibility issues with `pdf-parse` and `mammoth`
 - Tailwind CSS v4 (not v3): uses `@import "tailwindcss"` in CSS and the Vite plugin instead of `tailwind.config.js`
 - `nodemon` added as dev dependency for auto-reload during development
-- Project renamed from "Maieutic" / "Socratic Tutor" to "AI Professor Office Hours Simulator" across all docs
+- Project renamed from "Maieutic" / "Socratic Tutor" to "Maieutic" across all docs
 - Model updated to `claude-haiku-4-5-20251001` in all references
 
 **Problems:**

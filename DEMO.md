@@ -1,4 +1,4 @@
-# Demo & Submission Guide — AI Professor Office Hours Simulator
+# Demo & Submission Guide — Maieutic
 
 ---
 
@@ -58,7 +58,7 @@ Pause. Then cut.
 
 Switch to your product in the browser.
 
-> *Narration:* "This is AI Professor Office Hours Simulator. It works from your course materials, not the internet."
+> *Narration:* "This is Maieutic. It works from your course materials, not the internet."
 
 Show the drag-and-drop upload zone. Drop in two or three real SPM files — a lecture PDF, your notes, the syllabus. Show the ingestion progress and the success state listing the files with their labels (Lecture 4 — Scheduling, Week 5 — Risk Management, etc.).
 

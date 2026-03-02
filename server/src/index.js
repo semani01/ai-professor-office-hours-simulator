@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: false });
 const express = require('express');
 const cors = require('cors');
 
@@ -20,9 +20,19 @@ const sideQuestsRouter = require('./routes/sideQuests');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Disable ETags so API responses are never cached as 304
+app.set('etag', false);
+
 // Restrict CORS to the frontend origin in production; allow all in dev
 const corsOrigin = process.env.FRONTEND_URL || '*';
-app.use(cors({ origin: corsOrigin }));
+console.log(`[cors] origin set to: ${corsOrigin}`);
+app.use(cors({
+  origin: corsOrigin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.options('*', cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {

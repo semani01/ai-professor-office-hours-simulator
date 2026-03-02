@@ -1,4 +1,4 @@
-# TASKS.md — AI Professor Office Hours Simulator Build Tracker
+# TASKS.md — Maieutic Build Tracker
 
 Tick off tasks as you complete them. Each phase has an exit condition — don't advance until it's met.
 

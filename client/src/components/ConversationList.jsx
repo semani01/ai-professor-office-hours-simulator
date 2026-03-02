@@ -99,7 +99,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
     <div style={{ padding: '8px 10px' }}>
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 9, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 9, fontWeight: 600, color: theme.textSecondary, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Conversations
         </span>
         <button
@@ -172,7 +172,7 @@ export function ConversationList({ courseId, token, activeConversationId, onSele
                 <span
                   style={{
                     flex: 1, fontSize: 12,
-                    color: isActive ? theme.accentLight : theme.textMuted,
+                    color: isActive ? theme.accentLight : theme.textSecondary,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     fontWeight: isActive ? 500 : 400,
                   }}
