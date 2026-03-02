@@ -1,4 +1,4 @@
-# AI Professor Office Hours Simulator
+# Maieutic
 
 > An AI tutor that knows your course, refuses to shortcut your thinking, and is available the moment you need it.
 
@@ -6,7 +6,7 @@
 
 ## What This Is
 
-AI Professor Office Hours Simulator is an AI-native study tool built for a specific problem: at 11pm the night before an exam, no help exists that actually knows your course. Google is generic. ChatGPT has never read your professor's slides. Reddit gives you decontextualized answers. Office hours are tomorrow.
+Maieutic is an AI-native study tool built for a specific problem: at 11pm the night before an exam, no help exists that actually knows your course. Google is generic. ChatGPT has never read your professor's slides. Reddit gives you decontextualized answers. Office hours are tomorrow.
 
 This system lets a student upload their actual course materials — lecture slides, notes, syllabus, assignments — and then ask questions. The AI answers exclusively from those materials, referencing the exact week and framing the professor used. Critically, it never gives the student the direct answer. It uses the Socratic method — guiding questions, hints drawn from the student's own notes, sub-problems — until the student arrives at the answer themselves.
 
@@ -30,7 +30,7 @@ The AI never certifies that the student is ready for the exam. It can confirm wh
 
 ## Live Demo
 
-> URL will be added after Phase 6 deployment.
+> [https://ai-professor-office-hours-simulator.vercel.app](https://ai-professor-office-hours-simulator.vercel.app)
 
 ---
 
@@ -72,7 +72,7 @@ PORT=3001
 ```bash
 # Clone the repo
 git clone <repo-url>
-cd ai-professor-office-hours-simulator
+cd maieutic
 
 # Install server dependencies
 cd server && npm install
@@ -95,7 +95,7 @@ Backend runs on `http://localhost:3001`
 ## Project Structure
 
 ```
-/ai-professor-office-hours-simulator
+/maieutic
   /client                        ← React + Vite frontend
     /src
       /components

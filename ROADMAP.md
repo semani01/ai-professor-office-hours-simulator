@@ -1,4 +1,4 @@
-# Roadmap — AI Professor Office Hours Simulator
+# Roadmap — Maieutic
 
 Phases are the unit of work. Each phase has a clear goal, a concrete task list, and an exit condition. Do not move to the next phase until the exit condition for the current phase is met.
 
