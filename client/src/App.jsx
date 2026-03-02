@@ -101,12 +101,12 @@ function AppContent({ session, signOut }) {
   // Load courses on mount
   function loadCourses() {
     setCoursesError(false);
-    fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(async (data) => {
         let list = data.courses || [];
         if (list.length === 0) {
-          const res = await fetch('/api/courses', {
+          const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ name: 'My Course' }),
@@ -125,7 +125,7 @@ function AppContent({ session, signOut }) {
   // Load XP data
   useEffect(() => {
     if (!token) return;
-    fetch('/api/xp', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/xp', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { if (!data.error) setXpData(data); })
       .catch(() => {});
@@ -134,7 +134,7 @@ function AppContent({ session, signOut }) {
   // On mount: check for an existing active session (browser-close recovery)
   useEffect(() => {
     if (!token) return;
-    fetch('/api/study-sessions/active', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/study-sessions/active', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => { if (data.session) setActiveStudySession(data.session); })
       .catch(() => {});
@@ -143,7 +143,7 @@ function AppContent({ session, signOut }) {
   // Check for welcome-back summary once course is loaded and no active session running
   useEffect(() => {
     if (!token || !activeCourseId || activeStudySession) return;
-    fetch(`/api/study-sessions/latest-summary?courseId=${activeCourseId}`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/study-sessions/latest-summary?courseId=${activeCourseId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -174,7 +174,7 @@ function AppContent({ session, signOut }) {
   }
 
   async function handleCreateCourse(name) {
-    const res = await fetch('/api/courses', {
+    const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name }),
@@ -187,7 +187,7 @@ function AppContent({ session, signOut }) {
   }
 
   async function handleRenameCourse(courseId, name) {
-    const res = await fetch(`/api/courses/${courseId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/courses/${courseId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name }),
@@ -199,7 +199,7 @@ function AppContent({ session, signOut }) {
   }
 
   async function handleDeleteCourse(courseId) {
-    await fetch(`/api/courses/${courseId}`, {
+    await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/courses/${courseId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -248,7 +248,7 @@ function AppContent({ session, signOut }) {
     setShowSessionSetup(false);
     // Create a named conversation for this session
     try {
-      const res = await fetch('/api/conversations', {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ courseId: activeCourseId, title: `__session__${sess.id}` }),
@@ -276,7 +276,7 @@ function AppContent({ session, signOut }) {
     if (!activeStudySession || endingSession) return;
     setEndingSession(true);
     try {
-      const res = await fetch(`/api/study-sessions/${activeStudySession.id}/end`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/study-sessions/${activeStudySession.id}/end`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -286,8 +286,8 @@ function AppContent({ session, signOut }) {
       });
       const data = await res.json();
       if (data.summary) setSessionSummary(data.summary);
-    } catch (err) {
-      console.error('[session] end error:', err.message);
+    } catch {
+      // session end failed silently — UI still resets below
     } finally {
       setActiveStudySession(null);
       sessionQuizResultsRef.current = [];
@@ -673,7 +673,7 @@ function AppContent({ session, signOut }) {
             setWelcomeBackSummary(null);
           }}
           onDismiss={() => {
-            fetch(`/api/study-sessions/summaries/${welcomeBackSummary.id}/dismiss`, {
+            fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/study-sessions/summaries/${welcomeBackSummary.id}/dismiss`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}` },
             }).catch(() => {});

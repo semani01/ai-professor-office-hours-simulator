@@ -50,14 +50,14 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
 
     if (pdf) {
       // Quick HEAD check to see if the stored file exists
-      fetch(`/api/files/${courseId}/download?sourceFile=${encoded}`, {
+      fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/files/${courseId}/download?sourceFile=${encoded}`, {
         method: 'HEAD',
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => setFileAvailable(r.ok)).catch(() => setFileAvailable(false));
     } else {
       // Non-PDF: fetch extracted text
       setTextLoading(true);
-      fetch(`/api/files/${courseId}/raw?sourceFile=${encoded}`, {
+      fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/files/${courseId}/raw?sourceFile=${encoded}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((r) => r.json())

@@ -19,7 +19,7 @@ export function SideQuestPanel({ courseId, token }) {
 
   useEffect(() => {
     if (!courseId || !token) return;
-    fetch(`/api/side-quests?courseId=${courseId}`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/side-quests?courseId=${courseId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -32,7 +32,7 @@ export function SideQuestPanel({ courseId, token }) {
     if (!title || adding) return;
     setAdding(true);
     try {
-      const res = await fetch('/api/side-quests', {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/side-quests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ courseId, title }),
@@ -48,7 +48,7 @@ export function SideQuestPanel({ courseId, token }) {
 
   async function handleToggle(id, current) {
     try {
-      const res = await fetch(`/api/side-quests/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/side-quests/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ completed: !current }),
@@ -62,7 +62,7 @@ export function SideQuestPanel({ courseId, token }) {
 
   async function handleDelete(id) {
     try {
-      await fetch(`/api/side-quests/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/side-quests/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

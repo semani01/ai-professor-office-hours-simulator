@@ -102,7 +102,7 @@ function FlashcardsTab({ courseId, topicTag, tier, token, aiCards, setAiCards })
     setGenError(null);
     try {
       const tag = encodeURIComponent(topicTag);
-      const res = await fetch(`/api/topic-room/${courseId}/flashcards?tag=${tag}&tier=${tier}&count=15`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/topic-room/${courseId}/flashcards?tag=${tag}&tier=${tier}&count=15`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -557,7 +557,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
   useEffect(() => {
     if (!courseId || !token) return;
     const convTitle = `__topic__${topic.tag}`;
-    fetch(`/api/conversations?courseId=${courseId}&includeHidden=true`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations?courseId=${courseId}&includeHidden=true`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -566,7 +566,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
         if (existing) {
           setTopicConvId(existing.id);
         } else {
-          const res = await fetch('/api/conversations', {
+          const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/conversations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ courseId, title: convTitle }),
@@ -620,7 +620,7 @@ export function TopicRoom({ topic, courseId, token, onBack, onNewBadges, onTierC
     setContent(null);
     try {
       const tag = encodeURIComponent(topic.tag);
-      const res = await fetch(`/api/topic-room/${courseId}?tag=${tag}&tier=${useTier}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/topic-room/${courseId}?tag=${tag}&tier=${useTier}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

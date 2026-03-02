@@ -69,7 +69,7 @@ export default function StudySessionModal({ courseId, token, onSessionStarted, o
     async function fetchTopics() {
       setLoadingTopics(true);
       try {
-        const res = await fetch(`/api/topics/${courseId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/topics/${courseId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Failed to load topics');
@@ -89,7 +89,7 @@ export default function StudySessionModal({ courseId, token, onSessionStarted, o
       setGeneratingPlan(true);
       setPlanError(null);
       try {
-        const res = await fetch('/api/study-sessions', {
+        const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/study-sessions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

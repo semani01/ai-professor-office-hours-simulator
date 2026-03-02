@@ -18,7 +18,7 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
       return;
     }
     setLoadingHistory(true);
-    fetch(`/api/conversations/${conversationId}/messages`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${conversationId}/messages`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -53,7 +53,7 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
       if (!convId && !isSystem && !createdConvRef.current) {
         createdConvRef.current = true;
         try {
-          const createRes = await fetch('/api/conversations', {
+          const createRes = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/conversations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ courseId }),
@@ -69,7 +69,7 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
         }
       }
 
-      const res = await fetch('/api/chat', {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,11 +89,11 @@ export function useChat(courseId, token, onXpEarned, conversationId, conversatio
       // Persist messages to DB if we have a conversation ID
       if (convId) {
         const base = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
-        fetch(`/api/conversations/${convId}/messages`, {
+        fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${convId}/messages`, {
           ...base, method: 'POST',
           body: JSON.stringify({ role: 'user', content: text }),
         }).then(() =>
-          fetch(`/api/conversations/${convId}/messages`, {
+          fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/conversations/${convId}/messages`, {
             ...base, method: 'POST',
             body: JSON.stringify({ role: 'assistant', content: data.response, sources: data.sources || [] }),
           })

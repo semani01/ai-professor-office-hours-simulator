@@ -10,8 +10,10 @@ router.get('/', async (req, res) => {
     return res.status(400).json({ error: 'courseId is required' });
   }
 
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
   try {
-    const jwt = extractJwt(req);
     const supabase = getAuthClient(jwt);
 
     const { data, error } = await supabase
@@ -41,10 +43,13 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'title is required and must be non-empty' });
   }
 
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
   try {
-    const jwt = extractJwt(req);
     const supabase = getAuthClient(jwt);
     const user_id = await getUserId(jwt);
+    if (!user_id) return res.status(401).json({ error: 'Could not identify user' });
 
     const { data: maxData, error: maxError } = await supabase
       .from('side_quests')
@@ -87,8 +92,10 @@ router.patch('/:id', async (req, res) => {
     return res.status(400).json({ error: 'completed must be a boolean' });
   }
 
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
   try {
-    const jwt = extractJwt(req);
     const supabase = getAuthClient(jwt);
 
     const { data, error } = await supabase
@@ -111,8 +118,10 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const sideQuestId = req.params.id;
 
+  const jwt = extractJwt(req);
+  if (!jwt) return res.status(401).json({ error: 'Unauthorized' });
+
   try {
-    const jwt = extractJwt(req);
     const supabase = getAuthClient(jwt);
 
     const { error } = await supabase

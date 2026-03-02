@@ -20,7 +20,9 @@ const sideQuestsRouter = require('./routes/sideQuests');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// Restrict CORS to the frontend origin in production; allow all in dev
+const corsOrigin = process.env.FRONTEND_URL || '*';
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 app.get('/health', (req, res) => {

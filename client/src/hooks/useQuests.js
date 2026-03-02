@@ -13,7 +13,7 @@ export function useQuests(courseId, token) {
     if (!courseId || !token) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/quests?courseId=${courseId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/quests?courseId=${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -30,7 +30,7 @@ export function useQuests(courseId, token) {
   async function adoptQuests(actions) {
     if (!courseId || !token || !actions?.length) return;
     try {
-      const res = await fetch('/api/quests', {
+      const res = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/quests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -53,7 +53,7 @@ export function useQuests(courseId, token) {
 
   async function updateQuestStatus(questId, status) {
     try {
-      const res = await fetch(`/api/quests/${questId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/quests/${questId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
@@ -69,7 +69,7 @@ export function useQuests(courseId, token) {
 
   async function deleteQuest(questId) {
     try {
-      await fetch(`/api/quests/${questId}`, {
+      await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/quests/${questId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

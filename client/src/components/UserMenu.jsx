@@ -46,7 +46,7 @@ export function UserMenu({ email, token, signOut, onCourseRestored }) {
   useEffect(() => {
     if (!open || !token) return;
     setLoadingArchived(true);
-    fetch('/api/courses/archived', { headers: { Authorization: `Bearer ${token}` } })
+    fetch((import.meta.env.VITE_API_URL ?? '') + '/api/courses/archived', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((data) => setArchived(data.courses || []))
       .catch(() => setArchived([]))
@@ -56,7 +56,7 @@ export function UserMenu({ email, token, signOut, onCourseRestored }) {
   async function handleRestore(courseId) {
     setRestoringId(courseId);
     try {
-      const res = await fetch(`/api/courses/${courseId}/restore`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/courses/${courseId}/restore`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
