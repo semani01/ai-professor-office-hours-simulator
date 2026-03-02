@@ -293,6 +293,64 @@ Keep entries concise. This is a development journal, not documentation.
 
 ---
 
+### 2026-03-01 — Phase 6c: Study Sessions, Quests & Gamification
+
+**Built:**
+- `server/src/routes/studySessions.js` — POST /api/study-sessions (AI plan), GET /api/study-sessions/active, POST /api/study-sessions/:id/end (AI summary), GET /api/study-sessions/latest-summary, POST /api/study-sessions/summaries/:id/dismiss
+- `server/src/routes/quests.js` — CRUD for AI-generated quests linked to session summaries
+- `server/src/routes/sideQuests.js` — CRUD for user-created to-do tasks
+- `server/src/routes/conversations.js` — full conversation + message persistence; internal conversations (`__` prefix) protected from DELETE/PATCH (403); GET filters them from sidebar by default
+- New Supabase tables: study_sessions, session_summaries, quests, side_quests, conversations, conversation_messages
+- `StudySessionModal.jsx` — 4-step wizard: intent → topic checkboxes → time goal → AI study plan review
+- `ActiveSessionBanner.jsx` — 40px banner: elapsed timer, break duration picker (opens downward), End Session button
+- `SessionSummaryPanel.jsx` — AI summary overlay: demonstrated skills, gaps, priorities, blindspots; checkbox selection → "Add N Quests"
+- `WelcomeBackPanel.jsx` — returning user modal with prior session summary and quest adoption
+- `QuestPanel.jsx` — AI quest sidebar: colored left-border per status, status pills, type icons, Go→/Done buttons
+- `SideQuestPanel.jsx` — user task list: 18px checkboxes, 13px text, delete on hover, API-backed
+- `FocusTimer.jsx` — standalone header timer: 5 presets (5/15/25/45/60 min), pause/resume, full-screen completion modal with break chips
+- `useQuests.js` — fetch, adopt, update status, delete, auto-completion based on user actions
+- `useChat.js` — extended: lazy conversation auto-creation on first user message (onAutoConversation callback); isSystem flag prevents guided messages from creating conversations
+- Resizable left/right panels — `makeDragHandler()`, localStorage persistence (maieutic_left_w, maieutic_right_w)
+- Clickable Maieutic logo → clears activeTopic + activeConversationId (home)
+- Topic room persistent chat — hidden `__topic__` conversations auto-created per topic; useChat wired with topicConvId
+- Session-guided chat — handleSessionStarted creates `__session__` conversation, sends plan message via sendMessageRef after 200ms timeout
+- KnowledgePortfolio poll interval reduced from 15s → 5s
+
+**Decisions:**
+- Hidden conversations use `__` prefix naming convention — filtered from sidebar, protected from deletion server-side (403)
+- Lazy conversation creation in useChat avoids empty conversations for users who never type
+- Break menu positioned with `top: calc(100% + 8px)` (not bottom) — banner is near top of page, no room above
+- Portfolio version bump on session start and quest adoption ensures sidebar refreshes without sign-out/in
+
+**Problems:**
+- Quest icon 🛣️ repeatedly reverted to ⚔️ by linter — kept fixing manually
+- StudySessionModal default export vs named import mismatch — fixed import in App.jsx
+- Break menu rendering off-screen — fixed positioning from `bottom` to `top`
+- Topic chat not persisting — root cause was users deleting `__topic__` conversations from sidebar (not visible but accessible via API); fixed with server-side 403 guard on DELETE/PATCH for `__` prefix titles
+
+---
+
+### 2026-03-01 — Pre-Deployment Hardening
+
+**Built:**
+- VITE_API_URL support: all 50 client fetch calls updated to prepend `(import.meta.env.VITE_API_URL ?? '')` — both string and template literal patterns
+- `client/src/lib/api.js` — API_BASE helper documenting the pattern
+- Explicit 401 guard added to all 8 handlers in `quests.js` and `sideQuests.js`
+- CORS scoped to `process.env.FRONTEND_URL || '*'` in `server/src/index.js`
+- multer patched (2 DoS CVEs fixed via `npm audit fix`)
+- `openai` unused dependency removed
+- `console.error` removed from App.jsx session end handler
+- `.env.example` files updated with VITE_API_URL and FRONTEND_URL docs
+
+**Decisions:**
+- `(import.meta.env.VITE_API_URL ?? '') + '/api/...'` pattern chosen — minimizes file changes, no import needed, works identically in dev (empty string → Vite proxy) and production (Railway URL)
+- CORS fallback to `'*'` means dev still works without FRONTEND_URL set
+
+**Problems:**
+- All 50 fetch calls required two script passes: first for string `fetch('/api...'` calls (18 occurrences), second for template literal `` fetch(`/api... `` calls (32 occurrences across 12 files) — bash couldn't handle backtick escaping so Node.js script approach used
+
+---
+
 ### [Date] — Phase 7: Deployment
 
 **Built:**

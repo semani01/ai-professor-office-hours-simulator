@@ -234,31 +234,60 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 
 ---
 
+## Phase 6c — Study Sessions, Quests & Gamification ✅ Done
+**Goal:** Structured study sessions with AI planning, gamified quest system, focus timer.
+**Branch:** `feat/phase-6c-sessions`
+
+- [x] Supabase tables: study_sessions, session_summaries, quests, side_quests, conversations, conversation_messages
+- [x] StudySessionModal — 4-step wizard (intent → topics → duration → AI plan review)
+- [x] ActiveSessionBanner — 40px header bar with elapsed timer, break picker, End Session button
+- [x] SessionSummaryPanel — AI-generated summary with quest adoption
+- [x] WelcomeBackPanel — returning user panel with prior session summary
+- [x] useQuests.js — fetch, adopt, update status, delete, auto-completion
+- [x] QuestPanel.jsx — AI-generated quests in right sidebar with visual overhaul
+- [x] SideQuestPanel.jsx — user to-do list with persistent backend
+- [x] FocusTimer.jsx — standalone timer with full-screen completion modal
+- [x] Resizable panels with drag handles + localStorage persistence
+- [x] Clickable logo → home with lazy conversation auto-creation
+- [x] Topic room chat persistence via hidden `__topic__` conversations
+- [x] Server: protect internal conversations from DELETE/PATCH (403)
+- [x] Pre-deployment hardening: VITE_API_URL on all fetch calls, 401 guards, multer patch, CORS scope
+
+---
+
 ## Phase 7 — Deployment
-**Goal:** Shareable live URL for the demo video.
+**Goal:** Shareable live URL for the demo.
+**Branch:** `feat/phase-7-deployment` (branch off `main` after merging 6c PR)
 
-**Branch:** `feat/phase-7-deployment` (branch off `main` before starting)
+**Already done (in `feat/phase-6c-sessions`):**
+- [x] VITE_API_URL support added to all client fetch calls
+- [x] CORS scoped to FRONTEND_URL env var
 
-- [ ] Frontend → Vercel:
-  - [ ] Connect GitHub repo
-  - [ ] Build command: `cd client && npm run build`
-  - [ ] Output directory: `client/dist`
-  - [ ] Set Vercel env var: `VITE_API_URL=<railway-backend-url>`
+**Remaining:**
+- [ ] Merge `feat/phase-6c-sessions` PR into main
+- [ ] Cut `feat/phase-7-deployment` off main
 - [ ] Backend → Railway:
-  - [ ] Create Railway project, connect GitHub repo
-  - [ ] Set all env vars in Railway dashboard
-  - [ ] Confirm `/health` passes Railway health check
-- [ ] Update frontend API calls to use `VITE_API_URL` (not hardcoded `localhost:3001`)
-- [ ] Check Supabase IP allowlisting if Railway IP needs to be added
-- [ ] Smoke test live deployment end-to-end:
-  - [ ] Upload lecture PDF
-  - [ ] Ask question → confirm Socratic response with source citation
-  - [ ] Confirm Knowledge Portfolio updates, XP bar shows, quiz works
+  - [ ] Create Railway project; set root directory: `/server`; start command: `npm start`
+  - [ ] Set env vars: CLAUDE_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, PORT, FRONTEND_URL (Vercel URL)
+  - [ ] Confirm `/health` returns `{"status":"ok"}`
+  - [ ] Note the Railway URL (e.g. `https://maieutic-server.up.railway.app`)
+- [ ] Frontend → Vercel:
+  - [ ] Connect GitHub repo; set root directory: `client`; build: `npm run build`; output: `dist`
+  - [ ] Set env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_URL=`<railway-url>`
+  - [ ] Confirm live Vercel URL; update FRONTEND_URL on Railway to match
+- [ ] Smoke test live deployment:
+  - [ ] Sign up / sign in
+  - [ ] Create course → upload PDF → chunks ingested
+  - [ ] Ask question → Socratic response + source citations
+  - [ ] Quiz, XP, Achievements work
+  - [ ] Start Study Session → guided chat appears
+  - [ ] Open Topic Room → Chat tab persists after back-navigate
+  - [ ] Focus Timer completion modal
 - [ ] Update `README.md` with live demo URL
-- [ ] Commit and push to `feat/phase-7-deployment`; open PR into `main`; merge
-- [ ] Update `IMPLEMENTATION.md` — Phase 7 log entry (what was built, live URL, problems)
+- [ ] Update `IMPLEMENTATION.md` Phase 7 log entry (date, URL, problems)
+- [ ] Commit, push, PR, merge into main
 
-**Exit condition:** Live Vercel URL works end-to-end. Full ingestion + chat + dashboard flow confirmed on live deployment. PR merged into `main`.
+**Exit condition:** Live Vercel URL works end-to-end. Full ingestion + chat + gamification + study sessions confirmed on live deployment. PR merged into `main`.
 
 ---
 
@@ -293,7 +322,8 @@ Tick off tasks as you complete them. Each phase has an exit condition — don't 
 | 5 — Auth, Multi-Course, File Viewer | ✅ Done |
 | 5a — Polish & Dark Mode | ✅ Done |
 | 6 — Gamification, Knowledge Portfolio & UI Redesign | ✅ Done |
-| 7 — Deployment | ⬜ Not started |
+| 6c — Study Sessions, Quests & Gamification | ✅ Done |
+| 7 — Deployment | 🔄 In progress |
 | 8 — Demo + Submission | ⬜ Not started |
 
 Update the status column as you go: ⬜ Not started → 🔄 In progress → ✅ Done
