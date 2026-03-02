@@ -664,9 +664,29 @@ function AppContent({ session, signOut }) {
         />
       )}
 
+      {endingSession && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 4000,
+          background: 'rgba(0,0,0,0.75)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 16,
+        }}>
+          <div style={{
+            width: 40, height: 40, border: '3px solid #6366f1',
+            borderTopColor: 'transparent', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <div style={{ fontSize: 14, color: '#c7d2fe', fontWeight: 500 }}>
+            Generating your session report…
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
       {welcomeBackSummary && !sessionSummary && (
         <WelcomeBackPanel
           summary={welcomeBackSummary}
+          existingQuests={quests}
           onAdoptQuests={async (actions) => {
             await adoptQuests(actions);
             handleXpEarned();
