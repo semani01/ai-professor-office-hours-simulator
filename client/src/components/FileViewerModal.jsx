@@ -27,8 +27,8 @@ export function FileViewerModal({ file, courseId, token, onClose }) {
 
   const pdf = isPdf(file.fileName);
   const encoded = encodeURIComponent(file.fileName);
-  // The download URL goes through Vite's /api proxy in dev, direct in prod
-  const downloadUrl = `/api/files/${courseId}/download?sourceFile=${encoded}&token=${encodeURIComponent(token)}`;
+  const apiBase = import.meta.env.VITE_API_URL ?? '';
+  const downloadUrl = `${apiBase}/api/files/${courseId}/download?sourceFile=${encoded}&token=${encodeURIComponent(token)}`;
 
   // Slide-in after mount
   useEffect(() => {
