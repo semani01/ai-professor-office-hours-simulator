@@ -20,6 +20,9 @@ const sideQuestsRouter = require('./routes/sideQuests');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Disable ETags so API responses are never cached as 304
+app.set('etag', false);
+
 // Restrict CORS to the frontend origin in production; allow all in dev
 const corsOrigin = process.env.FRONTEND_URL || '*';
 console.log(`[cors] origin set to: ${corsOrigin}`);
