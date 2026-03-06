@@ -3,10 +3,10 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { ElectronIcon } from './ElectronIcon';
 
-export function AuthGate({ children, session, loading }) {
+export function AuthGate({ children, session, loading, initialMode = 'signin', onBackToLanding }) {
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
+  const [mode, setMode] = useState(initialMode); // 'signin' | 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -196,6 +196,23 @@ export function AuthGate({ children, session, loading }) {
           </button>
         </div>
       </div>
+
+      {/* Back to landing */}
+      {onBackToLanding && (
+        <button
+          onClick={onBackToLanding}
+          style={{
+            marginTop: 20, background: 'none', border: 'none',
+            color: theme.textMuted, fontSize: 13, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => e.target.style.color = theme.textSecondary}
+          onMouseLeave={e => e.target.style.color = theme.textMuted}
+        >
+          ← Back to home
+        </button>
+      )}
     </div>
   );
 }
