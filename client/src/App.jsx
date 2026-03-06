@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import { useQuests } from './hooks/useQuests';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthGate } from './components/AuthGate';
+import LandingPage from './components/LandingPage';
 import { CourseTabs } from './components/CourseTabs';
 import { FileUpload } from './components/FileUpload';
 import { ChatPanel } from './components/ChatPanel';
@@ -705,13 +706,55 @@ function AppContent({ session, signOut }) {
   );
 }
 
+function LoadingSpinner() {
+  const { theme } = useTheme();
+  return (
+    <div style={{
+      height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: theme.bgBase,
+    }}>
+      <div style={{
+        width: 28, height: 28,
+        border: '2px solid #6366f1', borderTopColor: 'transparent',
+        borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 export default function App() {
   const { session, loading, signOut } = useAuth();
+  const [showAuth, setShowAuth] = useState(null); // null = landing, 'signin' | 'signup'
+
+  useEffect(() => {
+    if (!session && !loading) setShowAuth(null);
+  }, [session, loading]);
+
+  const handleShowAuth = (mode) => {
+    window.scrollTo(0, 0);
+    setShowAuth(mode);
+  };
+
   return (
     <ThemeProvider>
-      <AuthGate session={session} loading={loading}>
+      {loading ? (
+        <LoadingSpinner />
+      ) : session ? (
         <AppContent session={session} signOut={signOut} />
-      </AuthGate>
+      ) : showAuth ? (
+        <AuthGate
+          session={session}
+          loading={false}
+          initialMode={showAuth}
+          onBackToLanding={() => handleShowAuth(null)}
+        />
+      ) : (
+        <LandingPage
+          onGetStarted={() => handleShowAuth('signup')}
+          onSignIn={() => handleShowAuth('signin')}
+        />
+      )}
     </ThemeProvider>
   );
 }
