@@ -987,7 +987,7 @@ function AppPreview({ theme, isMobile }) {
               display: 'flex', alignItems: 'center', gap: 6,
             }}>
               <span style={{ opacity: 0.5 }}>🔒</span>
-              ai-professor-office-hours-simulator.vercel.app
+              maieutic.vercel.app
             </div>
           </div>
 
@@ -1075,7 +1075,7 @@ function Footer({ theme, isMobile }) {
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
           <a
-            href="https://github.com/semani01/ai-professor-office-hours-simulator"
+            href="https://github.com/semani01/maieutic"
             target="_blank"
             rel="noopener noreferrer"
             style={{ fontSize: 13, color: theme.textMuted, textDecoration: 'none', transition: 'color 0.2s' }}

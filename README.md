@@ -2,7 +2,7 @@
 
 > An AI tutor that knows your course, refuses to shortcut your thinking, and is available the moment you need it.
 
-**[Live Demo](https://ai-professor-office-hours-simulator.vercel.app)**
+**[Live Demo](https://maieutic.vercel.app)**
 
 ---
 
@@ -193,8 +193,8 @@ maieutic/
 
 ```bash
 # Clone the repo
-git clone https://github.com/semani01/ai-professor-office-hours-simulator.git
-cd ai-professor-office-hours-simulator
+git clone https://github.com/semani01/maieutic.git
+cd maieutic
 
 # Install server dependencies
 cd server && npm install
