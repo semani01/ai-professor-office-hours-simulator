@@ -85,6 +85,15 @@ const LP_STYLES = `
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-6px); }
   }
+  @keyframes lp-word-enter {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes lp-word-exit {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(-100%); opacity: 0; }
+  }
+
 
   .lp-cta {
     transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
@@ -223,6 +232,57 @@ function Nav({ theme, toggleTheme, onSignIn, isMobile }) {
   );
 }
 
+/* ─── Word Cycle ─── */
+
+const CYCLE_WORDS = ['think.', 'reason.', 'understand.', 'grow.'];
+const CYCLE_INTERVAL = 2500;
+
+function WordCycle({ isMobile }) {
+  const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState('enter'); // 'enter' | 'idle' | 'exit'
+
+  useEffect(() => {
+    let timer;
+    if (phase === 'enter') {
+      timer = setTimeout(() => setPhase('idle'), 400);
+    } else if (phase === 'idle') {
+      timer = setTimeout(() => setPhase('exit'), CYCLE_INTERVAL - 800);
+    } else if (phase === 'exit') {
+      timer = setTimeout(() => {
+        setIndex(prev => (prev + 1) % CYCLE_WORDS.length);
+        setPhase('enter');
+      }, 400);
+    }
+    return () => clearTimeout(timer);
+  }, [phase]);
+
+  return (
+    <span style={{
+      display: 'inline-block', position: 'relative',
+      overflow: 'hidden', verticalAlign: 'bottom',
+      height: isMobile ? '1.15em' : '1.15em',
+      minWidth: isMobile ? 140 : 240,
+    }}>
+      <span
+        key={index}
+        style={{
+          display: 'inline-block',
+          background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          animation: phase === 'enter'
+            ? 'lp-word-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            : phase === 'exit'
+              ? 'lp-word-exit 0.4s cubic-bezier(0.5, 0, 0.84, 0) forwards'
+              : 'none',
+        }}
+      >
+        Learn to {CYCLE_WORDS[index]}
+      </span>
+    </span>
+  );
+}
+
 function Hero({ theme, onGetStarted, onSignIn, isMobile }) {
   const heroGradient = theme.isDark
     ? 'linear-gradient(135deg, #0f1117 0%, #1a1640 40%, #1e1b4b 70%, #251e52 100%)'
@@ -240,7 +300,7 @@ function Hero({ theme, onGetStarted, onSignIn, isMobile }) {
       background: heroGradient,
       backgroundSize: '200% 200%',
       animation: 'lp-gradient 12s ease infinite',
-      padding: isMobile ? '100px 20px 70px' : '140px 40px 100px',
+      padding: isMobile ? '100px 20px 60px' : '140px 40px 80px',
     }}>
       {/* Decorative elements */}
       {!isMobile && (
@@ -292,13 +352,7 @@ function Hero({ theme, onGetStarted, onSignIn, isMobile }) {
         }}>
           Don't just get answers.
           <br />
-          <span style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            Learn to think.
-          </span>
+          <WordCycle isMobile={isMobile} />
         </h1>
 
         <p style={{
@@ -547,7 +601,7 @@ function ProblemSection({ theme, isMobile }) {
 
   return (
     <section ref={containerRef} className="lp-reveal" style={{
-      padding: isMobile ? '70px 20px' : '110px 40px',
+      padding: isMobile ? '48px 20px' : '72px 40px',
       background: theme.bgBase,
     }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -630,7 +684,7 @@ function HowItWorks({ theme, isMobile }) {
 
   return (
     <section id="how-it-works" ref={ref} className="lp-reveal" style={{
-      padding: isMobile ? '70px 20px' : '110px 40px',
+      padding: isMobile ? '48px 20px' : '72px 40px',
       background: theme.bgSurface,
     }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -716,7 +770,7 @@ function FeaturesGrid({ theme, isMobile }) {
 
   return (
     <section id="features" style={{
-      padding: isMobile ? '70px 20px' : '110px 40px',
+      padding: isMobile ? '48px 20px' : '72px 40px',
       background: theme.bgBase,
     }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -790,137 +844,141 @@ function FeaturesGrid({ theme, isMobile }) {
 }
 
 function PhilosophySection({ theme, isMobile }) {
-  const ref = useScrollReveal();
+  const headRef = useScrollReveal();
+  const cardsRef = useScrollReveal();
+
+  const pillars = [
+    {
+      icon: '✅', color: theme.green.dot, bg: theme.green.border,
+      title: 'Demonstrated',
+      desc: 'Topics where you answered correctly without needing hints',
+    },
+    {
+      icon: '🔍', color: theme.yellow.dot, bg: theme.yellow.border,
+      title: 'Untested',
+      desc: "Topics you haven't explored or challenged yourself on yet",
+    },
+    {
+      icon: '🎯', color: theme.red.dot, bg: theme.red.border,
+      title: 'Priority',
+      desc: 'What to focus on with your remaining study time',
+    },
+  ];
+
   return (
-    <section ref={ref} className="lp-reveal" style={{
-      padding: isMobile ? '70px 20px' : '110px 40px',
+    <section style={{
+      padding: isMobile ? '48px 20px' : '72px 40px',
       background: theme.accentBg,
       borderTop: `1px solid ${theme.accentBorder}`,
       borderBottom: `1px solid ${theme.accentBorder}`,
       position: 'relative', overflow: 'hidden',
     }}>
-      {/* Subtle decorative glow */}
+      {/* Decorative glows */}
       <div style={{
-        position: 'absolute', right: '10%', top: '20%',
-        width: 250, height: 250, borderRadius: '50%',
+        position: 'absolute', right: '10%', top: '15%',
+        width: 280, height: 280, borderRadius: '50%',
         background: `radial-gradient(circle, ${theme.accent}12 0%, transparent 70%)`,
         pointerEvents: 'none',
       }} />
-
-      <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <SectionLabel text="Philosophy" theme={theme} />
-        <h2 style={{
-          fontSize: isMobile ? 28 : 42, fontWeight: 800,
-          color: theme.textPrimary, letterSpacing: '-0.03em',
-          lineHeight: 1.15, marginBottom: 28,
-        }}>
-          The AI never tells you{' '}
-          <span style={{
-            background: 'linear-gradient(135deg, #f87171, #ef4444)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>
-            you're ready.
-          </span>
-        </h2>
-        <p style={{
-          fontSize: isMobile ? 15 : 18, lineHeight: 1.8,
-          color: theme.textBody, maxWidth: 580, margin: '0 auto',
-        }}>
-          Your Knowledge Portfolio shows progress — green, yellow, red — but
-          the decision to walk into an exam confident? That's yours. The AI's job
-          is to make sure you've been asked the hard questions. Your job is to be
-          honest about whether you understand the answers.
-        </p>
-        <div style={{
-          marginTop: 36, padding: '14px 28px', borderRadius: 10,
-          display: 'inline-block',
-          background: theme.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-          border: `1px solid ${theme.border}`,
-        }}>
-          <span style={{
-            fontSize: 15, fontWeight: 600,
-            color: theme.textSecondary, fontStyle: 'italic',
-          }}>
-            "When to stop studying is your decision."
-          </span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Stats Strip ─── */
-
-function StatsStrip({ theme, isMobile }) {
-  const ref = useRef(null);
-  const [counts, setCounts] = useState([0, 0, 0, 0]);
-  const animatedRef = useRef(false);
-
-  const stats = [
-    { target: 100, suffix: '%', label: 'Grounded in Your Materials' },
-    { target: 6, suffix: '', label: 'AI-Powered Learning Tools' },
-    { target: 0, suffix: '', label: 'Direct Answers Ever Given' },
-    { target: 24, suffix: '/7', label: 'Always Available' },
-  ];
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !animatedRef.current) {
-        animatedRef.current = true;
-        const duration = 1400;
-        let start = null;
-        const tick = (ts) => {
-          if (!start) start = ts;
-          const p = Math.min((ts - start) / duration, 1);
-          // ease-out cubic
-          const ease = 1 - Math.pow(1 - p, 3);
-          setCounts(stats.map(s => Math.round(ease * s.target)));
-          if (p < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  return (
-    <section ref={ref} style={{
-      padding: isMobile ? '40px 20px' : '52px 40px',
-      background: theme.bgSurface,
-      borderTop: `1px solid ${theme.border}`,
-      borderBottom: `1px solid ${theme.border}`,
-    }}>
       <div style={{
-        maxWidth: 900, margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-        gap: isMobile ? 28 : 16,
-        textAlign: 'center',
-      }}>
-        {stats.map((s, i) => (
-          <div key={i}>
-            <div style={{
-              fontSize: isMobile ? 32 : 40, fontWeight: 800,
-              letterSpacing: '-0.03em',
-              background: 'linear-gradient(135deg, #6366f1, #a78bfa)',
+        position: 'absolute', left: '5%', bottom: '10%',
+        width: 200, height: 200, borderRadius: '50%',
+        background: `radial-gradient(circle, #8b5cf612 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ maxWidth: 960, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        {/* Headline */}
+        <div ref={headRef} className="lp-reveal" style={{ textAlign: 'center', marginBottom: 20 }}>
+          <SectionLabel text="Philosophy" theme={theme} />
+          <h2 style={{
+            fontSize: isMobile ? 28 : 42, fontWeight: 800,
+            color: theme.textPrimary, letterSpacing: '-0.03em',
+            lineHeight: 1.15, marginBottom: 16,
+          }}>
+            The AI never tells you{' '}
+            <span style={{
+              background: 'linear-gradient(135deg, #f87171, #ef4444)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              lineHeight: 1.1,
             }}>
-              {counts[i]}{s.suffix}
+              you're ready.
+            </span>
+          </h2>
+          <p style={{
+            fontSize: isMobile ? 15 : 18, color: theme.textSecondary,
+            maxWidth: 520, margin: '0 auto',
+          }}>
+            Instead of a readiness score, every session ends with three things:
+          </p>
+        </div>
+
+        {/* Three pillar cards */}
+        <div
+          ref={cardsRef}
+          className="lp-reveal lp-stagger"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: 18, marginTop: 40,
+          }}
+        >
+          {pillars.map((p, i) => (
+            <div key={i} className="lp-card" style={{
+              padding: 28, borderRadius: 14, textAlign: 'center',
+              background: theme.bgCard,
+              border: `1px solid ${theme.border}`,
+              position: 'relative', overflow: 'hidden',
+            }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = p.color;
+                e.currentTarget.style.boxShadow = `0 8px 32px ${p.color}20`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = theme.border;
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {/* Colored accent bar */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                background: `linear-gradient(90deg, ${p.color}, ${p.bg})`,
+              }} />
+
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%',
+                background: `${p.color}18`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 24, margin: '0 auto 16px',
+              }}>
+                {p.icon}
+              </div>
+              <h3 style={{
+                fontSize: 18, fontWeight: 700, color: theme.textPrimary,
+                marginBottom: 8,
+              }}>
+                {p.title}
+              </h3>
+              <p style={{
+                fontSize: 14, lineHeight: 1.6, color: theme.textSecondary, margin: 0,
+              }}>
+                {p.desc}
+              </p>
             </div>
-            <div style={{
-              fontSize: 13, color: theme.textSecondary, fontWeight: 500,
-              marginTop: 6,
-            }}>
-              {s.label}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Closing quote */}
+        <p style={{
+          textAlign: 'center', marginTop: 48,
+          fontSize: isMobile ? 18 : 24, fontWeight: 700,
+          fontStyle: 'italic', letterSpacing: '-0.01em',
+          background: 'linear-gradient(135deg, #6366f1, #a78bfa)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}>
+          "The decision of when to stop studying is always yours."
+        </p>
       </div>
     </section>
   );
@@ -933,7 +991,7 @@ function AppPreview({ theme, isMobile }) {
 
   return (
     <section ref={ref} className="lp-reveal" style={{
-      padding: isMobile ? '70px 20px' : '110px 40px',
+      padding: isMobile ? '48px 20px' : '72px 40px',
       background: theme.bgSurface,
     }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
@@ -1009,7 +1067,7 @@ function FinalCTA({ theme, onGetStarted, isMobile }) {
   const ref = useScrollReveal();
   return (
     <section ref={ref} className="lp-reveal" style={{
-      padding: isMobile ? '70px 20px' : '110px 40px',
+      padding: isMobile ? '48px 20px' : '72px 40px',
       background: theme.bgBase, textAlign: 'center',
       position: 'relative', overflow: 'hidden',
     }}>
@@ -1103,7 +1161,6 @@ export default function LandingPage({ onGetStarted, onSignIn }) {
 
       <Nav theme={theme} toggleTheme={toggleTheme} onSignIn={onSignIn} isMobile={isMobile} />
       <Hero theme={theme} onGetStarted={onGetStarted} onSignIn={onSignIn} isMobile={isMobile} />
-      <StatsStrip theme={theme} isMobile={isMobile} />
       <ProblemSection theme={theme} isMobile={isMobile} />
       <HowItWorks theme={theme} isMobile={isMobile} />
       <FeaturesGrid theme={theme} isMobile={isMobile} />
